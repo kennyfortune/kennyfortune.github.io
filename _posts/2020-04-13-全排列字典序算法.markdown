@@ -12,7 +12,7 @@ tags:
 
 # 1.原理
 
-![在这里插入图片描述](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/20181101133823660.jpg)
+![在这里插入图片描述](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/20181101133823660.jpg)
 
 1. 从右往左找第一个小于右边的数，这个数记为left，位置记为pos_left
 2. 从右往左找第一个大于left的数，这个数记为right

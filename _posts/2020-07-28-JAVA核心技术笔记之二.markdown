@@ -1,0 +1,1016 @@
+---
+layout:     post
+title:      JAVA核心技术笔记之二
+subtitle:   java类相关内容。多态、继承、重载是面向对象的核心。
+date:       2020-07-28
+author:     deponia
+header-img: img/post-sisyphus.jpg
+catalog: true
+tags:
+    - java
+    - 面向对象
+---
+
+
+
+# 1.类与对象
+
+## 1.1.类概述
+
+**概念**
+
+1. 类：模板、蓝图
+   - behavior 行为
+   - state 状态
+   - identity 标识
+
+2. 对象：类的实例
+
+3. 类的产生是为了**封装/encapsulation/数据隐藏**
+
+4. 类的关系
+   1. 依赖 use-a
+   2. 聚合 has-a
+   3. 继承 is-a 
+
+   > 这个很高层。UML的标准更具体，还有组合、关联、继承、实现
+
+5. 构造器/构造函数
+
+6. 访问权限
+
+| 同一个类  | **同一个包** | **不同包的子类** | **不同包的非子类** |      |
+| --------- | ------------ | ---------------- | ------------------ | ---- |
+| Private   | √            |                  |                    |      |
+| Default   | √            | √                |                    |      |
+| Protected | √            | √                | √                  |      |
+| Public    | √            | √                | √                  | √    |
+
+7. final声明的字段必须在构造器里赋值
+
+8. 静态方法、静态字段。类共享一份
+
+9. 方法参数
+
+   - 按值调用 call by value 基本类型，无法修改在外部传入时的值
+
+   - 引用调用 reference 可以修改外部传入的类的内容。
+
+     > 注意和c++的不同，引用不等于指针。 x y 传入进来后 相当于 newx，newy。  修改newx的引用值，不会对外部x产生影响。
+     >
+     > String 不可变对象。所以reference的方式传也是无法直接修改的。每次修改实际都是产生一个新的String，来保证对外部不会产生影响
+
+**补充**
+
+1. JAVA10引入：使用var来声明对象，自动检测类型。不适用于数值类型，如int、double、long
+
+   `var a = new String("2");`
+
+2. 快速判断null值
+
+   ```java
+   test = Objects.requireNonNullElse(n,"unknown"); //没有就赋值默认值
+   test = Objects.requireNonNull(n,"test cannot be null"); //抛异常
+   //空指针的传递很可能导致追踪困难，这种写法可以轻易追踪到具体null的位置
+   ```
+
+3. 每个方法的第一个参数都是隐式参数this，指向对象本身（JVM笔记里有提到）
+
+4. 贫血模型不要在get set里惨杂业务逻辑，充血模型可以考虑，不必局限与字段一一对应
+
+   ```java
+   //充血模型的例子
+   String firstname;
+   String lastname;
+   ....
+   public String getName(){
+       return firstname + " " + lastname;
+   }
+   ```
+
+## 1.2.对象构造
+
+**重载**
+
+可以声明相同名字不同参数的方法
+
+>  java的标准中没有将返回值纳入函数签名, 所以只有返回值不同是无法区分不同的方法的。
+>
+> 函数签名实习和JVM有关，具体看jvm详解构造
+
+**默认无参构造器**
+
+没写构造函数的时候默认会有，写了这个就没了。
+
+**字段初始化**
+
+1. `int a;`默认字段初始化。比如int默认赋0，引用类型默认赋null。
+2. 显示字段初始化：直接赋值/构造函数/静态方法赋值。
+3. 通过this调用其他构造函数，一种设计方法。来方便逐层设计重载的构造函数
+
+**初始化块**
+
+每次初始化都会执行的代码
+
+```java
+{
+    id = 10;
+}
+//建议放在字段构造块前
+```
+
+**构造器初始化顺序**
+
+1. this 如果构造器第一行调用了其他构造函数，则执行这个调用构造器.
+2. 如果第一行不是其他构造函数，执行默认字段初始化
+3. 执行显示字段初始化（直接赋值、静态方法赋值）和初始化块方法
+4. 最后再执行构造器主体内容
+
+**静态初始化块**
+
+用于静态变量的赋值，区别与普通初始化，他只有类第一次加载的时候才会执行。
+
+```java
+public static int i;
+static
+{
+    i = 3;
+}
+```
+
+## 1.3 包
+
+**导入**
+
+- 导入 import java.util.Collections;
+- 静态导入 import java.util.*;
+
+- 直接用 java.time.LocalDate d;
+
+**类路径**
+
+找jar位置，根据package路径找到具体的class文件
+
+unix 用 : 分隔路径 windows 用 ; 分隔路径
+
+```java
+java -classpath c:\classdir;.;d:\archive.jar
+```
+
+**jar打包**
+
+>  一般不会手动打了，用到再查吧 跳过
+
+## 1.4 文档注释
+
+javadoc工具，可以自动生成HTML文档
+
+**类注释**
+
+```java
+/**
+ * 注释说清楚内容
+ * 可以{@code ..}来链接到具体类
+ * 还可以用<em>..</em>
+ */
+class A{
+    
+}
+```
+
+**方法注释**
+
+```java
+/**
+ * 注释说清楚内容
+ * @param a
+ * @return 
+ * @throw
+ */
+public String t(int a) throw XXXException{
+    
+}
+```
+
+**字段注释**
+
+```java
+/**
+ * 注释说清楚内容
+ */
+private int i;
+```
+
+**通用注释**
+
+```java
+@since
+@author
+@version
+@see class
+@see class#method(param) 
+@see <a href="www.test.com">example</a> 
+```
+
+**包注释**
+
+第一种方式 包下创建 package-info.java
+
+```
+/**
+ * 形式是一个javadoc注释和包路径，不能再有额外的代码和注释了。在这里说清楚包作用
+ */
+package com.example.test;
+```
+
+第二种方式 包下创建一个package.html文件 `<body>注释的内容</body>` 会抽取body的文本作为注释
+
+**生成javadoc文档（不重要）**
+
+javadoc -d docDirectory nameOfPackage
+
+> 更多方式自己去查吧
+>
+> 我们平时阅读源码的api文档就是javadoc文档
+>
+> 界面如下
+
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1432431-20190710205018253-1980690972.jpg)
+
+## 1.5 类设计技巧
+
+**一定保证数据私有，封装性**
+
+- private
+
+**一定要对数据进行初始化**
+
+- 虽然jvm提供默认数据初始化，但最好显示指定，确保所有默认数据在自己控制之下
+
+**不要过多的使用基本类型**
+
+- 字段可以封装成一个小类，比如 street city state可以封装成 Address一个类作为字段
+
+**分解过多指责的类**
+
+**类名、方法名体现指责，别偷懒写法**
+
+**优先使用不可变的类**
+
+- 防止可能存在的并发问题。比如用LocalDate 不用 Data
+
+# 2.继承
+
+## 2.1 继承概述
+
+**继承是is-a的关系**
+
+- 超super 子sub 类似数学集合超集子集的概念
+
+**继承extends与重写override**
+
+```java
+class Father{
+    private int f;
+    public void setF(int i){
+        f = i;
+    }
+}
+class Son extends Father{
+    private int s;
+   	
+    @Override //重写方法
+    public void setF(int i){
+        //子类访问父类私有字段，和外部类访问一样，需要父类对外开放的方法
+        super.setF(i);
+    }
+}
+```
+
+**子类构造器**
+
+```java
+class Father{
+    private int f;
+    public Father(int i){
+        f = i;
+    }
+}
+class Son extends Father{
+    public Son(int i){
+        super(i);//子类的无法访问父类的私有字段，只能用调用父类构造器的形式来调用
+        //如果第一行没有显式指定super 默认会调服务的无参构造器，如果此时父类没有无参构造器，会报错
+    }
+}
+```
+
+**继承链**
+
+从某特定的类到其祖先的路径称为该类的继承链
+
+java不支持类的多继承，支持接口的多继承
+
+继承关系像树一样
+
+**阻止继承**
+
+final类 不能extends了
+
+final方法 子类无法继承这个方法
+
+**抽象类 abstract**
+
+不能被实例化
+
+有抽象方法必须是抽象类
+
+抽象类可以有具体方法
+
+**protected**
+
+将字段和方法仅开放给子类
+
+## 2.2 多态
+
+**一个对象变量可以指示多种实际类型的现象称为多态polymorphism**
+
+- 也作一个声明为父类的地方，总可以被其子类替换（里氏替换原则）
+
+- jvm可以知道实际变量指向的对象，可以判断变量是哪个子类或者就是父类
+
+**数组的多态注意事项**
+
+ ```
+Son[] a = ...;
+Father[] b = a;//多态，b实际上还是Son类型的数组
+b[0] = new Father(...);//ArrayStoreException，Son不能被Father替换
+//所以要牢记数组的真实类型
+ ```
+
+**强制类型转换**
+
+- 父类转之类失败会有异常终止 ClassCastException，程序结束
+
+- 使用 instance of 判断是否可以转换时良好的编程习惯
+
+  ```java
+  if(staff[1] instance of Manager){
+      boss = (Manager) staff[1];
+  }
+  ```
+
+## 2.3 Object
+
+**所有类的超类**
+
+**equals方法判断两个类是否相同**
+
+- 重写此方法可以实现自己的equal逻辑
+
+- 子类定义equals，可以先super调用父类的equals，因为父类不相等子类不相等（除非特殊的业务逻辑）
+
+> Arrays.equals 快速判断数组equals
+
+**equals的困境**
+
+- 对称性的要求 x.equals(y) = y.equals(s) 
+- 对称性判断的两种实现
+  - 子类有自己的相等性概念 getClass + 额外的业务逻辑
+  - 超类决定相等性概念就用  x instanceOf 父类 可以在不同的子类的判断
+
+**hashcode**
+
+- obeject默认的hashcode是根据存储地址计算
+- String默认对每一个字符 31 * hash + charAt(i) 循环 
+  - 所以同字符串的hashcode相同
+  - 
+- **hashcode必须与equals兼容，equals为true的hashcode必须相等（反之不对）**
+
+> Arrays.hashcode 计算数组hashcode，为所有数组项的hashcode组成
+
+**toString**
+
+- 打印多为数组需要Arrays.deepToString
+
+**getName**
+
+**getClass**
+
+## 2.4 泛型数组
+
+```java
+var staff = new Employee[10];
+staff[1] = a;
+var b = staff[1];
+
+var staff = new ArrayList<Employee>(10);
+staff.set(0,l);//只能替换已有元素，新增要用add
+staff.add(1,b);//可以再中间插入，没有位置默认末尾插入
+var b = staff.get(0);
+staff.toArray();//转数组
+staff.remove(1);
+```
+
+## 2.5 对象包装器自动包装
+
+**基本类型转换为对象**
+
+这些类叫包装器Wrapper。如Integer
+
+包装器不可变而且为final
+
+自动装箱autowrapping / boxing 自动拆箱
+
+编译器的工作
+
+**注意**
+
+- 包装器用==对比的时候为比内存地址，要用equals防止错误
+
+- Double * Integer的时候 Integer自动拆箱-》int  精度转换 double  -》装箱成Double
+
+```java
+Integer i = 1;
+i.intValue(); //手动拆箱
+Integer.parseInt(String s,int radix); //转换成int
+Integer.valueOf(String s,int radix); //转换成Integer
+//方法的返回值可以是Wrapper或者基本类型
+```
+
+## 2.6 可变参数
+
+自动装箱成数组形式
+
+比如print，后面其实就是参数数组
+
+```java
+//可以传数组 也可以用逗号分隔传，
+public PrintStream print(String fmt, Object... args){...}
+print("%d %s",n,"a");
+//只能传数组
+public PrintStream print(String fmt, Object[] args){...}
+print("%d %s",new Obeject[]{new Integer(1),"aaa"});
+
+```
+
+## 2.7 枚举类
+
+**构造函数必须私有**
+
+**Enum类有类型参数，例子相当于 Enum\<Size>, Size扩展了Enum\<Size>**
+
+**枚举类型是枚举类的子类继承了枚举类的很多方法**
+
+- 注意：比较可以不用equals，直接用==
+
+- toString() valueOf() 是的String和Enum转换
+
+- values() 返回枚举类数组
+- ordinal() 声明是枚举类的第几个类型
+- compareTo(E e) 比较在枚举类中的位置 
+
+```java
+public enum Size{
+    SMALL("S")，MID("M"),BIG("B");
+    
+    //可以加入字段增加描述信息
+    private String discription;
+    //对应的构造器方法
+    ...
+    //对应的get set
+    ...
+}
+```
+
+## 2.8 反射
+
+**反射库 reflection library 立功了强大的而分析类能力** 
+
+- 运行时分析类
+- 运行时检查对象
+- 实现泛型数组操作代码
+- 利用Method对象
+
+### 2.8.1 Class类
+
+**Class 实际上 是 Class\<T>对象，T为对应的类**
+
+```java
+Employee e;
+Class cl = e.getClass();
+cl.getName();
+Class cl = Class.forName("java.util.Random");
+Class cl = int.class;
+Class cl = Random.class;
+Class cl = Double[].class;//返回的是Double的数组类型 getName 会看见[Ljava.lang.Double
+
+//构造实例 注意要有对应的构造函数
+Random r = cl.getConstructor.newInstance(xxxx);
+Object newInstance(Object... params);
+```
+
+注意：jvm为每个类管理一个Class对象，所以可以用==判断相等
+
+**获取资源**
+
+类通常有关联的数据文件
+
+```java
+Class cl = ResourceTest.class;
+//两种方法
+URL aboutURL = cl.getResource("about.gif");
+var icon = new ImageIcon(aboutURL);
+
+InputStream stream = cl.getResourceAsStream("..");
+var about = new String(stream.readAllBytes(),"UTF-8");
+```
+
+### 2.8.2 分析类的能力
+
+**Field Method Constructor**
+
+- getxxx 分别返回**公共字段、方法和构造器（包括超类的公共）**
+
+- getDeclaredXXX 返回的是这个类的所有字段、方法和构造器
+- 这三个类使用getModifiers可以获得一个整数 代表修饰符（public，static之类）
+  - Modifier类有许多判断的静态方法 如 isFinal之类的
+- 这三个类使用getDeclaredClass 获取对应的类对象
+- method 、 constructor可以使用 getParameterType getExceptionTypes
+- method 可以使用 getReturnType 
+- 访问权限限制，可以通过setAcessible改变
+
+**动态修改、获取对象**
+
+具体看api把有些可以传入String指定要哪个方法哪个字段
+
+field.get(对象) 可以获得对象对应的这个字段，同理set可以设置
+
+- 受到访问权限限制，可以通过setAcessible改变
+
+**数组**
+
+编写通用的数组函数的时候可能要用到（因为参数需要Object，返回值也是Obeject）
+
+- 参数不要Obeject[]是因为 int[]等 无法转换为 Object[] 只能转换成 Object
+
+判断是不是数组类型 Class的isArray
+
+Class的getComponentType可以获得数组元素的类型
+
+Array.newInstance(type,length)
+
+### 2.8.3 调用任意方法和构造函数
+
+注意获取方法要提供方法签名（java规范是方法名和所有参数类型）
+
+Method getMethod(String name, Class... parameterTypes)'
+
+- constructor get获取同理，但不需要name（因为构造器名字相同）
+- constructor调用的是newInstance而非getMethod
+
+```java
+String n = (String) m1.invoke(args);
+```
+
+## 2.9 继承的设计规范
+
+1. 公共操作和字段放在超累
+2. 不要使用受保护的字段
+   - java提供了protected 字段 但是不要用。因为同一包下可以访问，别人任意扩展的子类也可以访问，破坏了封装性
+   - protected 方法 可以用在那些不提供一般用途而应在子类中重新定义的方法很有用
+3. 继承用在is-a关系，严禁为了图方便破坏这种关系
+4. 除非所有继承方法都是有意义的，否则不要用继承
+5. 覆盖方法时、不要改变预期的行为
+   - 不然里氏替换原则可能会有问题
+
+6. 使用多态而不要使用类型信息
+7. 不要滥用反射
+   - 无编译器查找错误，运行时才能发现错误很危险。
+
+# 3.接口、lambda
+
+## 3.1 接口
+
+**概念**
+
+可以是泛型接口，如Comparable\<T>
+
+可以定义属性字段，强制public static final
+
+- 意味着可以用接口来定义某些常量类来使用
+
+可以提供方法不提供实现，强制public
+
+可以提供简单方法，但它不能引用实例字段——接口没有实例。int 
+
+- 定义方法例子
+
+  ```java
+  public Collection{
+      int size();
+      default boolean isEmpty();{return size()==0};
+  }
+  ```
+
+implements实现接口
+
+Comparable\<T>一个比较接口，定义compareTo方法
+
+- java建议 compareTo 为0 和 equals 为true等价，但有例外 BigDecimal，两个精度不同的数1.0 1.00是没有办法知道谁大谁小
+- 和Equals会有同样的对称性问题，两种不就
+  - 抛出类型转换异常
+  - 子类需要独立的compareTo的话 父类使用final 修饰自己的compareTo
+
+类不支持多继承，但是可以多实现接口
+
+**默认方法冲突**
+
+子类定义和超类同名同参数的方法，**超类优先**
+
+两个接口的方法同名参数，有个类实现了这个接口，**接口冲突**
+
+- 如果两个接口其中有一个有具体实现，那么实现这两个接口的类（无论是否抽象）必须提供这个方法的实现
+  - 但可以通过`XXX.super.xxx()`来调用父接口的方法
+  - 也可以自己额外实现
+
+- 如果两个接口都没有实现这个同名同参数的方法，则没有冲突
+  - 子类是个抽象类，可以不提供实现
+  - 子类不是抽象类，提供实现
+
+一个继承的超类和一个实现的接口方法，同名同参数，**类优先**
+
+- 因为类优先的原则，所有接口定义Obeject的方法变得没有意义（Object是所有类的超类）
+
+## 3.2 回调callback
+
+常用的设计模式，由于java采用面向对象的思想，通过传对象来实现回调。
+
+一般提供回调的方法都会提供一个接口，你的对象必须实现这个接口，供回调
+
+下面是Timer的例子
+
+```java
+Class Printer implements ActionListner{
+    public void actionPerformed(ActionEvent event){
+        System.out.println("At the tone, the time is"
+                          + Instant.ofEpochMilli(event.getWhen()));
+        Toolkit.getDefaultToolkit().beep();
+    }
+}
+//回调
+var l = new Print();
+Timer t = new Timer(1000,l);//每一秒回调一次
+```
+
+## 3.3 Comparator接口
+
+上文的Comparable,如果我们想采用其他的比较方式，不能有多种实现，况且很多类自带的Comparable不应该由我们修改（比如String）
+
+所有有了Comparator比较器，他不通过继承来起作用，而是传入一个对象，非常方便的思想。
+
+```java
+Arrays.sort(friends,new Comparator<People>{
+    @Override
+    public int compara(xxx,xxx){
+        xxxx
+    } 
+});
+```
+
+## 3.4 Cloneable
+
+是个标记接口没有任何方法
+
+- 用来给instance of判断的
+
+- 浅克隆深克隆
+
+如果对象不可变，没有浅克隆深克隆的问题，因为它不可变不会有潜在风险
+
+对于每一个类，需要确定
+
+1. 默认的clone方法是否满足
+
+2. 是否可以在可变的子对象上带哦用clone来修补默认的clone方法
+
+3. 是否不该使用clone
+
+- 1、2都需要实现Cloneable
+- 重新定义clone方法，并指定public访问修饰符
+
+**Object的clone**
+
+- protected， 浅克隆
+- 子类想要使用要重写并改成public
+  - protected是为了防止其他类随意地未重写的clone方法
+
+## 3.5 lambda表达式
+
+**基本形式**
+
+```java
+(String a, String b) -> return a.length() - b.length()
+//代码块形式，可以编写更长更复杂额表达式
+(String a, String b) -> {
+    return a.length() - b.length()
+}
+//如果类型编译器可知，可以省略
+(a, b) -> return a.length() - b.length()
+```
+
+**函数式接口**
+
+只有一个抽象方法的接口，需要这种接口的对象时，就可以提供一个lambda表达式
+
+- Comparator就是一个典型
+
+Java中也仅仅时将lambda表达式转化为幻术师接口，并不提供真正意义上的函数了哦下哦美好
+
+**java.util.function**
+
+java.util.function中定义了许多通用的函数式接口，下面几个常见的
+
+- BiFunction<T,U,R> 参数T类型U类型，返回U类型
+- Predicate\<T> 判断一个值是不是真还是假
+  - 例子：`list.removeIf(e->e==null)`
+- Supplier\<T>   内部方法是T get()  
+  - 例子：`()->new LocalDate(1920)`
+
+**方法引用method reference**
+
+```java
+var timer = new Timer(100,System.out::println);
+//下面写法也是合法的
+this::method
+super::method
+```
+
+生成一个函数式接口实例，其内容就是这个方法引用
+
+可能会有很多函数重载，编译器会选择最适合的生成对应的实例
+
+**构造器引用**
+
+类`Person::new`
+
+数组 `int[]::new`
+
+**变量作用域**
+
+如果lambda表达式中，含有表达式外部声明的自由变量（非表达式参数的变量）。
+
+在回调场景中，它在调用后很久才允许，这时候自由变量会消失吗？
+
+- 不会，它会被保存在函数时接口的生成的实例中
+- 这个过程叫做捕获Capatured
+- 只能引用值不会改变的变量，不然并发会有问题
+  - 表达式内部修改自由变量不可以
+  - 或者自由变量外部在变化（比如一个表达式放在for循环内部，然后用了循环的i作自由变量）不可以
+
+# 4.内部类
+
+## 4.1 概念
+
+定义在另一个类中的类、可以public 可以 private
+
+- public 可以被外界 outerClass.innerClass引用
+- private 可以只能在外部类创建、调用
+
+作用
+
+- 对同一包中的其他类隐藏
+- 访问这个类的作用域中的数据，包括私有的
+
+内部类对象会持有外部类对象的索引，隐式引用
+
+- 这个引用不可见的，编译器会自动帮我们加上
+
+- 内部类静态字段必须final且初始化，不能有static方法、
+
+  ```java
+  public class InnerClassDemo{
+  　　int x;
+  　　class A{
+  　　　　static int a = 0;//这样写是不合法的.
+  　　　　static final int b=0;//这样写是合法的
+      }
+  }
+  ```
+
+  
+
+内部类是编译器现象，jvm其实对此是没有感知的
+
+它通过在外围类增加的静态方法让内部类获取字段
+
+- 编译器生成的这个静态方法方法名不是符合规范的，黑客只有手动编写16进制类文件才可以使用
+- 某种意义上的不安全
+
+## 4.2 局部内部类
+
+声明在方法的内部类，不能由private 和 public修饰符
+
+作用
+
+- 对外部完全隐藏，除了这个方法没有任何地方可以使用
+
+- 可以直接访问使用局部变量，但这些局部变量必须是事实最终变量 effectively final
+
+  这是因为内部类创建的时候，会将使用到的局部变量复制到类内部字段
+
+  - 和lambda的理念一样，这个方法结束后，局部变量啥的都会消失，内部类必须自己存储。
+
+## 4.3 匿名内部类
+
+使用局部内部类的时候，想更进一步，连名字都不想取，只想要这个类的一个对象
+
+- **不能有构造器，但可以用初始化块**
+
+```java
+//创建了一个实现了Comparator接口的对象，这个匿名内部类重写了compara方法
+new Comparator<A>{
+    @OVerride
+    public ......
+}
+```
+
+因为匿名类没有类名，所以需要超类的构造器
+
+```java
+new InterfaceType(){
+    methods abd data
+}
+```
+
+## 4.4 静态内部类
+
+有时候只是为了把一个类隐藏在另外一个类的内部，并不需要内部类有外围对象的一个引用。为此可以将内部类声明为static，这样就不会生成那个引用
+
+静态内部类与普通内部类不同
+
+- 静态类是public 和 static的
+
+- 静态字段可以非final了
+- 可以是public 或者 private
+
+# 5.服务加载器（待补坑一篇新文章）
+
+https://www.jianshu.com/p/46b42f7f593c
+
+SPI全称Service Provider Interface，是Java提供的一套用来被第三方实现或者扩展的API，它可以用来启用框架扩展和替换组件。
+
+开源框架中常见的。
+
+一个服务有很多种实现，我们可以动态替换，就是这种spi机制，spring运用了大量的spi机制。
+
+Java对应的ServiceLoader加载对应实现的类
+
+# 6.代理proxy
+
+**运行时创建实现了一组给定接口的新类**
+
+**AOP的核心**
+
+Proxy类
+
+- newProxyInstance
+- 参数为
+  - 类加载器
+  - 接口类数组
+  - 一个InvocationHandler
+
+InvocationHandler接口
+
+- 调用代理对象方法是通过这个接口的invoke方法
+
+代码参考，看了就懂了
+
+出处：https://blog.csdn.net/iteye_17716/article/details/82639791?utm_medium=distribute.pc_relevant.none-task-blog-OPENSEARCH-1.edu_weight&depth_1-utm_source=distribute.pc_relevant.none-task-blog-OPENSEARCH-1.edu_weight
+
+```java
+
+package com.daxingzsh.proxy;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+ 
+/**
+ * java动态代理
+ * 面向切面编程
+ * AOP
+ * @author xinxin
+ *
+ */
+public class GoToilot {
+	
+	public static void main(String[] args){
+		People target1 = new Woman();
+		People target2 = new Man();
+		People woman = ProxyFactory.getProxy(target1);
+		People man = ProxyFactory.getProxy(target2);
+                //使用代理生成的对象被切入了业务逻辑
+		woman.goToilot();
+		System.out.println("-------------------------");
+		man.goToilot();
+	}
+	
+}
+ 
+/**
+ * 代理工厂
+ * @author xinxin
+ *
+ */
+class ProxyFactory{
+	@SuppressWarnings("unchecked")
+	public static <T> T getProxy(T target){
+		MyInvockHander hander = new MyInvockHander(target);
+		return (T)Proxy.newProxyInstance(target.getClass().getClassLoader(), target.getClass().getInterfaces(), hander);
+	}
+}
+ 
+/**
+ * 动态代理
+ * 将处理逻辑切入被代理对象方法
+ * @author xinxin
+ *
+ */
+class MyInvockHander implements InvocationHandler{
+ 
+	private Object target;
+	public MyInvockHander(Object target){
+		this.target = target;
+	}
+	
+	@Override
+	public Object invoke(Object proxy, Method method, Object[] args)
+			throws Throwable {
+		PeopleGoToToilot toToilot = new PeopleGoToToilot();
+		//在调用被代理对象方法前执行处理逻辑
+		toToilot.start();
+		Object result = method.invoke(target, args);
+		//在调用被代理对象方法后执行处理逻辑
+		toToilot.end();
+		return result;
+	}
+	
+}
+ 
+/**
+ * 人类接口
+ * @author xinxin
+ *
+ */
+interface People{
+	
+	/**
+	 * 上厕所抽象方法
+	 */
+	public void goToilot();
+}
+ 
+/**
+ * 女人实现类
+ * @author xinxin
+ *
+ */
+class Woman implements People{
+ 
+	@Override
+	public void goToilot() {
+		System.out.println("女：蹲式");
+	}
+	
+}
+ 
+/**
+ * 男人实现类
+ * @author xinxin
+ *
+ */
+class Man implements People{
+ 
+	@Override
+	public void goToilot() {
+		System.out.println("男：站式");
+	}
+	
+}
+ 
+/**
+ * 上厕所业务类
+ * @author xinxin
+ *
+ */
+class PeopleGoToToilot{
+	
+	public void start(){
+		System.out.println("脱");
+	}
+	
+	public void end(){
+		System.out.println("穿");
+	}
+}
+```
+

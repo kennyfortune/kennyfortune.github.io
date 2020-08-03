@@ -20,7 +20,7 @@ tags:
 
 **应用部署模式**：每个docker内部署多个容器，每个容器作为一个服务
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/6534887-53a8d68d6e0f3af0.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/6534887-53a8d68d6e0f3af0.jpg)
 
 相比虚拟机和容器
 
@@ -63,7 +63,7 @@ Spring Cloud Config ：文件系统、Git、Eureka、Consul
 
 **多机容器部署**：多个节点可以便于减少服务器压力、同时有效防止单点故障，利于服务故障的恢复
 
-![1586343645260](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586343645260.jpg)
+![1586343645260](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586343645260.jpg)
 
 **通信问题**：需要解决的就是不同主机上容器的通信问题、服务调度问题
 
@@ -79,13 +79,13 @@ Spring Cloud Config ：文件系统、Git、Eureka、Consul
 - 自动扩容缩容
 - 服务发现和负载均衡
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/6534887-ad58ca339c403a4b.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/6534887-ad58ca339c403a4b.jpg)
 
 # 2.部署配置服务
 
 **目录结构**
 
-![1586344846466](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586344846466.jpg)
+![1586344846466](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586344846466.jpg)
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -207,7 +207,7 @@ Spring Cloud Config ：文件系统、Git、Eureka、Consul
 
 **工程内配置流程**
 
-![1586348464723](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586348464723.jpg)
+![1586348464723](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586348464723.jpg)
 
 1. 配置pom
 2. 写启动类，@EnableConfigServer注解
@@ -324,7 +324,7 @@ spring:
 
 push到远端从库就行
 
-![1586355423334](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586355423334.jpg)
+![1586355423334](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586355423334.jpg)
 
 8. 生成镜像
 
@@ -426,7 +426,7 @@ depends_on：只能决定启动顺序，无法判断是否已经准备好
 
 > 所以我们在镜像运行的dockerfile 里 运行的脚本 run.sh
 >
-> 加入了 ![1586359431858](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586359431858.jpg)
+> 加入了 ![1586359431858](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586359431858.jpg)
 >
 > 来判断容器ping不ping得通，也就是可用不可以用
 

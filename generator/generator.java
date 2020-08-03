@@ -15,7 +15,11 @@ public class generator{
 		LocalDate t = LocalDate.now();
 		String d = t.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		
-		File file = new File(".."+File.separator+"_post"+File.separator+d+"-"+title+".md");
+		File file = new File("E:"+File.separator+
+		"code"+File.separator+
+		"kennyfortune.github.io"+File.separator+
+		"_posts",d+"-"+title+".markdown");
+		file.createNewFile();
 		String subtitle = JOptionPane.showInputDialog(" Please input subtitle: \n");
 		String header = "---\n"+
 						"layout:     post\n"+

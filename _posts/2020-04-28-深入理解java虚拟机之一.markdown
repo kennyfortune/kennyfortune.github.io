@@ -24,7 +24,7 @@ tags:
 - 线程私有：随着jvm进程启动一直存在
 - 线程共有：依赖线程启动和结束而建立和销毁
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/u=1037197684,1320081122&fm=26&gp=0.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/u=1037197684,1320081122&fm=26&gp=0.jpg)
 
 
 
@@ -317,7 +317,7 @@ java堆中会划分出一块内存作为句柄池、reference存储的是句柄�
 
 对象移动位置时（GC尤为常见），只需要更改句柄指针的值，而不用更改reference的值
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1117609-20200327223929343-1244300162.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1117609-20200327223929343-1244300162.jpg)
 
 ### 2.3.2 直接访问
 
@@ -327,7 +327,7 @@ reference直接存储对象地址
 
 直接访问对象快，不用像句柄进行二次定位的开销
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1117609-20200327223943696-1024093458.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1117609-20200327223943696-1024093458.jpg)
 
 ## 2.4 OOM实战代码（主要体会JVM参数）
 
@@ -360,7 +360,7 @@ public class headOOM{
 
 `java -Xmx20m -Xms20m -XX:+HeapDumpOnOutOfMemoryError headOOM`
 
-![1588092194428](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588092194428.jpg)
+![1588092194428](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588092194428.jpg)
 
 检错思路
 
@@ -411,7 +411,7 @@ public class JavaVMStackSOF{
 
 `java -Xss128k JavaVMStackSOF`
 
-![1588093164958](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588093164958.jpg)
+![1588093164958](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588093164958.jpg)
 
 ```java
 //栈帧非常大
@@ -463,7 +463,7 @@ public class JavaVMStackSOF2{
 
 `java JavaVMStackSOF2`
 
- ![1588094174989](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588094174989.jpg)
+ ![1588094174989](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588094174989.jpg)
 
 **两种都抛出SOF**
 
@@ -815,13 +815,13 @@ public class FinalizeEscapeGC{
 
 - 导致碎片化严重
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/2018060409420087.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/2018060409420087.jpg)
 
 **标记-复制算法**
 
 半区复制 Semispace Copying
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/20180604094340321.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/20180604094340321.jpg)
 
 基于这算法提出了 Appel式回收 的复制分代策略
 
@@ -837,7 +837,7 @@ public class FinalizeEscapeGC{
 
 **标记-整理算法**
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/20180604094723837.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/20180604094723837.jpg)
 
 常用于年老代
 
@@ -996,7 +996,7 @@ class RenenveredSet
 
 取脏元素的位置，扫描对应内存的所有对象，加入GC roots
 
-![1588243619250](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588243619250.jpg)
+![1588243619250](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588243619250.jpg)
 
 **卡精度写屏障机制** write barrier
 
@@ -1060,7 +1060,7 @@ if (CARD_TABLE[this address >> 9]!=0){
 - 黑色：对象已经被垃圾收集器访问过，且这个对象所有引用都被扫描过。如果有对象指向黑色对象，无需重复访问。黑色不可能直接指向白色
 - 灰色：对象已经被垃圾收集器访问过，且这个对象有引用没扫描过
 
-![1588247923066](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588247923066.jpg)
+![1588247923066](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588247923066.jpg)
 
 **对象的错误GC，当且仅当以下两个条件同时满足**
 
@@ -1092,7 +1092,7 @@ if (CARD_TABLE[this address >> 9]!=0){
 
 ## 3.4 经典垃圾收集器
 
-![1588248915260](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588248915260.jpg)
+![1588248915260](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588248915260.jpg)
 
 > JDK9 取消了如图的组合使用方式
 

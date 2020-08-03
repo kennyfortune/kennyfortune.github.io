@@ -218,7 +218,7 @@ maven主要作用：在需要高并发访问条件下构建分区集群项目时
 
 优点：保证依赖版本的一致性
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1602531-20190815204956971-648790226.png)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1602531-20190815204956971-648790226.png)
 
 首先在父工程（test）的pom.xml文件中引入经过dependencyManagement束缚的jar包，以便子工程进行重写引用
 

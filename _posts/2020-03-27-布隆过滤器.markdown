@@ -34,7 +34,7 @@ BF是由一个**长度为m比特的位数组（bit array）**与**k个哈希函�
 
 n为插入n各元素，p为
 
-![](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/post-0327-布隆过滤器.jpg)
+![](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/post-0327-布隆过滤器.jpg)
 
 查询时，通过对进入值得hash并查询位数组，**都为1则可能存在，存在0可能存在**
 

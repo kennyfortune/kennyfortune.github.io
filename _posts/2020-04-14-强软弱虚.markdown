@@ -38,7 +38,7 @@ ThreadLocal里的Entry便是弱引用
 
 所以entry采用的是弱引用
 
-![1586811921751](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586811921751.jpg)
+![1586811921751](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586811921751.jpg)
 
 > 注意点1：value仍有内存泄漏的情况
 >
@@ -67,5 +67,5 @@ DirectByteBuffer NIO用来管理堆外内存的对象
 
 这时候使用虚引用，DirectByteBuffer gc的时候，gc信息进入Queue，JVM得到Queue的信息就知道回收堆外内存
 
-![1586813262091](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586813262091.jpg)
+![1586813262091](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586813262091.jpg)
 
