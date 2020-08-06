@@ -27,7 +27,7 @@ http://openjdk.java.net/groups/hotspot/docs/HotSpotGlossary.html
 
 **compare and swap**
 
-![1586794022237](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586794022237.jpg)
+![1586794022237](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586794022237.jpg)
 
 确认没被修改才更新，避免后面更新的操作覆盖前面更新的操作
 
@@ -116,7 +116,7 @@ public static void main(String[] args) {
 
 **普通对象**
 
-![1586795890264](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586795890264.jpg)
+![1586795890264](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586795890264.jpg)
 
 | 名称                   | 大小                                                         | 作用                      |
 | ---------------------- | ------------------------------------------------------------ | ------------------------- |
@@ -133,7 +133,7 @@ public static void main(String[] args) {
 
 **数组对象**
 
-![1586796357159](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586796357159.jpg)
+![1586796357159](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586796357159.jpg)
 
 # 4.synchronized关键字实现：锁升级机制（和markword与CAS密切相关
 
@@ -189,7 +189,7 @@ public static void main(String[] args) {
 
 **markword锁升级机制**
 
-![1586798135745](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586798135745.jpg)
+![1586798135745](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586798135745.jpg)
 
 注意：GC除了最低两位的11其他应该为空
 
@@ -493,7 +493,7 @@ public class Singleton {
 
 要明白这个为什么仍然行不通，让我们了解下接下来的过程，再看注释
 
-![1586809295498](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586809295498.jpg)
+![1586809295498](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586809295498.jpg)
 
 ```asm
 void cantBeZero(int) throws java.lang.Exception;
@@ -577,7 +577,7 @@ ThreadLocal里的Entry便是弱引用
 
 所以entry采用的是弱引用
 
-![1586811921751](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586811921751.jpg)
+![1586811921751](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586811921751.jpg)
 
 > 注意点1：value仍有内存泄漏的情况
 >
@@ -606,5 +606,5 @@ DirectByteBuffer NIO用来管理堆外内存的对象
 
 这时候使用虚引用，DirectByteBuffer gc的时候，gc信息进入Queue，JVM得到Queue的信息就知道回收堆外内存
 
-![1586813262091](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586813262091.jpg)
+![1586813262091](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586813262091.jpg)
 

@@ -1,0 +1,724 @@
+---
+layout:     post
+title:      NETTY详解
+subtitle:   netty框架
+date:       2020-08-05
+author:     deponia
+header-img: img/post-sisyphus.jpg
+catalog: true
+tags:
+    - netty
+    - io
+---
+
+
+
+
+
+# 参考
+
+https://www.jianshu.com/p/46fb87ab71bc
+
+https://thinkwon.blog.csdn.net/article/details/104391081
+
+http://ifeve.com/buffers/
+
+https://www.zhihu.com/question/60892134
+
+https://www.cnblogs.com/luoxn28/p/11875340.html
+
+https://www.cnblogs.com/luoxn28/p/11875340.html
+
+# NETTY概念
+
+## 定义
+
+Netty是 一个异步事件驱动的网络应用程序框架，用于快速开发可维护的高性能协议服务器和客户端。Netty是基于nio的，它封装了jdk的nio，让我们使用起来更加方法灵活。
+
+## 特点
+
+- 高并发：Netty 是一款基于 NIO（Nonblocking IO，非阻塞IO）开发的网络通信框架，对比于 BIO（Blocking I/O，阻塞IO），他的并发性能得到了很大提高。
+- 传输快：Netty 的传输依赖于零拷贝特性，尽量减少不必要的内存拷贝，实现了更高效率的传输。
+- 封装好：Netty 封装了 NIO 操作的很多细节，提供了易于使用调用接口。
+
+## 优势
+
+- 使用简单：封装了 NIO 的很多细节，使用更简单。
+- 功能强大：预置了多种编解码功能，支持多种主流协议。
+- 定制能力强：可以通过 ChannelHandler 对通信框架进行灵活地扩展。
+- 性能高：通过与其他业界主流的 NIO 框架对比，Netty 的综合性能最优。
+- 稳定：Netty 修复了已经发现的所有 NIO 的 bug，让开发人员可以专注于业务本身。
+- 社区活跃：Netty 是活跃的开源项目，版本迭代周期短，bug 修复速度快。
+
+## 应用场景
+
+典型的应用有：阿里分布式服务框架 Dubbo，默认使用 Netty 作为基础通信组件，还有 RocketMQ 也是使用 Netty 作为通讯的基础。
+
+## 高性能表现
+
+- IO 线程模型：同步非阻塞，用最少的资源做更多的事。
+- 内存零拷贝：尽量减少不必要的内存拷贝，实现了更高效率的传输。
+- 内存池设计：申请的内存可以重用，主要指直接内存。内部实现是用一颗二叉查找树管理内存分配情况。
+- 串形化处理读写：避免使用锁带来的性能开销。
+- 高性能序列化协议：支持 protobuf 等高性能序列化协议。
+
+# JAVA NIO背景知识
+
+## BIO、NIO和AIO
+
+BIO：一个连接一个线程，客户端有连接请求时服务器端就需要启动一个线程进行处理。线程开销大。
+伪异步IO：将请求连接放入线程池，一对多，但线程还是很宝贵的资源。
+
+NIO：一个请求一个线程，但客户端发送的连接请求都会注册到多路复用器上，多路复用器轮询到连接有I/O请求时才启动一个线程进行处理。
+
+AIO：一个有效请求一个线程，客户端的I/O请求都是由OS先完成了再通知服务器应用去启动线程进行处理，
+
+BIO是面向流的，NIO是面向缓冲区的；BIO的各种流是阻塞的。而NIO是非阻塞的；BIO的Stream是单向的，而NIO的channel是双向的。
+
+NIO的特点：事件驱动模型、单线程处理多任务、非阻塞I/O，I/O读写不再阻塞，而是返回0、基于block的传输比基于流的传输更高效、更高级的IO函数zero-copy、IO多路复用大大提高了Java网络应用的可伸缩性和实用性。基于Reactor线程模型。
+
+在Reactor模式中，事件分发器等待某个事件或者可应用或个操作的状态发生，事件分发器就把这个事件传给事先注册的事件处理函数或者回调函数，由后者来做实际的读写操作。如在Reactor中实现读：注册读就绪事件和相应的事件处理器、事件分发器等待事件、事件到来，激活分发器，分发器调用事件对应的处理器、事件处理器完成实际的读操作，处理读到的数据，注册新的事件，然后返还控制权。
+
+## NIO的组成
+
+**Buffer**：与Channel进行交互，数据是从Channel读入缓冲区，从缓冲区写入Channel中的
+
+**flip**方法 ： 反转此缓冲区，将position给limit，然后将position置为0，其实就是切换读写模式
+
+**clear**方法 ：清除此缓冲区，将position置为0，把capacity的值给limit。
+
+**rewind**方法 ： 重绕此缓冲区，将position置为0
+
+**DirectByteBuffer**可减少一次系统空间到用户空间的拷贝。但Buffer创建和销毁的成本更高，不可控，通常会用内存池来提高性能。直接缓冲区主要分配给那些易受基础系统的本机I/O 操作影响的大型、持久的缓冲区。如果数据量比较小的中小应用情况下，可以考虑使用heapBuffer，由JVM进行管理。
+
+**Channel**：表示 IO 源与目标打开的连接，是双向的，但不能直接访问数据，只能与Buffer 进行交互。通过源码可知，FileChannel的read方法和write方法都导致数据复制了两次！
+
+**Selector**可使一个单独的线程管理多个Channel，open方法可创建Selector，register方法向多路复用器器注册通道，可以监听的事件类型：读、写、连接、accept。注册事件后会产生一个SelectionKey：它表示SelectableChannel 和Selector 之间的注册关系，wakeup方法：使尚未返回的第一个选择操作立即返回，唤醒的
+
+原因是：注册了新的channel或者事件；channel关闭，取消注册；优先级更高的事件触发（如定时器事件），希望及时处理。
+
+**Selector**在Linux的实现类是EPollSelectorImpl，委托给EPollArrayWrapper实现，其中三个native方法是对epoll的封装，而EPollSelectorImpl. implRegister方法，通过调用epoll_ctl向epoll实例中注册事件，还将注册的文件描述符(fd)与SelectionKey的对应关系添加到fdToKey中，这个map维护了文件描述符与SelectionKey的映射。
+
+fdToKey有时会变得非常大，因为注册到Selector上的Channel非常多（百万连接）；过期或失效的Channel没有及时关闭。fdToKey总是串行读取的，而读取是在select方法中进行的，该方法是非线程安全的。
+
+**Pipe**：两个线程之间的单向数据连接，数据会被写到sink通道，从source通道读取
+
+**NIO**的服务端建立过程：Selector.open()：打开一个Selector；ServerSocketChannel.open()：创建服务端的Channel；bind()：绑定到某个端口上。并配置非阻塞模式；register()：注册Channel和关注的事件到Selector上；select()轮询拿到已经就绪的事件
+
+## **BUFFER结构**
+
+**Buffer的基本用法**
+
+使用Buffer读写数据一般遵循以下四个步骤：
+
+1. 写入数据到Buffer
+2. 调用`flip()`方法
+3. 从Buffer中读取数据
+4. 调用`clear()`方法或者`compact()`方法
+
+当向buffer写入数据时，buffer会记录下写了多少数据。一旦要读取数据，需要通过flip()方法将Buffer从写模式切换到读模式。在读模式下，可以读取之前写入到buffer的所有数据。
+
+一旦读完了所有的数据，就需要清空缓冲区，让它可以再次被写入。有两种方式能清空缓冲区：调用clear()或compact()方法。clear()方法会清空整个缓冲区。compact()方法只会清除已经读过的数据。任何未读的数据都被移到缓冲区的起始处，新写入的数据将放到缓冲区未读数据的后面。
+
+**Buffer的capacity,position和limit**
+
+缓冲区本质上是一块可以写入数据，然后可以从中读取数据的内存。这块内存被包装成NIO Buffer对象，并提供了一组方法，用来方便的访问该块内存。
+
+为了理解Buffer的工作原理，需要熟悉它的三个属性：
+
+- capacity
+- position
+- limit
+
+position和limit的含义取决于Buffer处在读模式还是写模式。不管Buffer处在什么模式，capacity的含义总是一样的。
+
+这里有一个关于capacity，position和limit在读写模式中的说明，详细的解释在插图后面。
+
+![img](../img/buffers-modes.png)
+
+**capacity**
+
+作为一个内存块，Buffer有一个固定的大小值，也叫“capacity”.你只能往里写capacity个byte、long，char等类型。一旦Buffer满了，需要将其清空（通过读数据或者清除数据）才能继续写数据往里写数据。
+
+**position**
+
+当你写数据到Buffer中时，position表示当前的位置。初始的position值为0.当一个byte、long等数据写到Buffer后， position会向前移动到下一个可插入数据的Buffer单元。position最大可为capacity – 1.
+
+当读取数据时，也是从某个特定位置读。当将Buffer从写模式切换到读模式，position会被重置为0. 当从Buffer的position处读取数据时，position向前移动到下一个可读的位置。
+
+**limit**
+
+在写模式下，Buffer的limit表示你最多能往Buffer里写多少数据。 写模式下，limit等于Buffer的capacity。
+
+当切换Buffer到读模式时， limit表示你最多能读到多少数据。因此，当切换Buffer到读模式时，limit会被设置成写模式下的position值。换句话说，你能读到之前写入的所有数据（limit被设置成已写数据的数量，这个值在写模式下就是position）
+
+**Buffer的类型**
+
+Java NIO 有以下Buffer类型
+
+- ByteBuffer
+- MappedByteBuffer
+- CharBuffer
+- DoubleBuffer
+- FloatBuffer
+- IntBuffer
+- LongBuffer
+- ShortBuffer
+
+**Buffer的分配**
+
+要想获得一个Buffer对象首先要进行分配。 每一个Buffer类都有一个allocate方法。下面是一个分配48字节capacity的ByteBuffer的例子。
+
+`ByteBuffer buf = ByteBuffer.allocate(48);`
+
+这是分配一个可存储1024个字符的CharBuffer：
+
+`CharBuffer buf = CharBuffer.allocate(1024);`
+
+**向Buffer中写数据**
+
+写数据到Buffer有两种方式：
+
+- 从Channel写到Buffer。
+- 通过Buffer的put()方法写到Buffer里。
+
+从Channel写到Buffer的例子：
+
+``int` `bytesRead = inChannel.read(buf); ``//read into buffer.
+
+通过put方法写Buffer的例子：
+
+`buf.put(127);`
+
+> put方法有很多版本，允许你以不同的方式把数据写入到Buffer中。例如， 写到一个指定的位置，或者把一个字节数组写入到Buffer。 更多Buffer实现的细节参考JavaDoc。
+
+**flip()方法**
+
+flip方法将Buffer从写模式切换到读模式。调用flip()方法会将position设回0，并将limit设置成之前position的值。
+
+换句话说，position现在用于标记读的位置，limit表示之前写进了多少个byte、char等 —— 现在能读取多少个byte、char等。
+
+**从Buffer中读取数据**
+
+从Buffer中读取数据有两种方式：
+
+1. 从Buffer读取数据到Channel。
+2. 使用get()方法从Buffer中读取数据。
+
+从Buffer读取数据到Channel的例子：
+
+`int` `bytesWritten = inChannel.write(buf);`
+
+使用get()方法从Buffer中读取数据的例子
+
+`byte aByte = buf.get();`
+
+>  get方法有很多版本，允许你以不同的方式从Buffer中读取数据。例如，从指定position读取，或者从Buffer中读取数据到字节数组。更多Buffer实现的细节参考JavaDoc。
+
+**rewind()方法**
+
+Buffer.rewind()将position设回0，所以你可以重读Buffer中的所有数据。limit保持不变，仍然表示能从Buffer中读取多少个元素（byte、char等）。
+
+**clear()与compact()方法**
+
+一旦读完Buffer中的数据，需要让Buffer准备好再次被写入。可以通过clear()或compact()方法来完成。
+
+如果调用的是clear()方法，position将被设回0，limit被设置成 capacity的值。换句话说，Buffer 被清空了。Buffer中的数据并未清除，只是这些标记告诉我们可以从哪里开始往Buffer里写数据。
+
+如果Buffer中有一些未读的数据，调用clear()方法，数据将“被遗忘”，意味着不再有任何标记会告诉你哪些数据被读过，哪些还没有。
+
+如果Buffer中仍有未读的数据，且后续还需要这些数据，但是此时想要先先写些数据，那么使用compact()方法。
+
+compact()方法将所有未读的数据拷贝到Buffer起始处。然后将position设到最后一个未读元素正后面。limit属性依然像clear()方法一样，设置成capacity。现在Buffer准备好写数据了，但是不会覆盖未读的数据。
+
+**mark()与reset()方法**
+
+通过调用Buffer.mark()方法，可以标记Buffer中的一个特定position。之后可以通过调用Buffer.reset()方法恢复到这个position。
+
+```java
+buffer.mark();
+buffer.reset();
+```
+
+**equals()与compareTo()方法**
+
+可以使用equals()和compareTo()方法两个Buffer。
+
+equals()
+
+当满足下列条件时，表示两个Buffer相等：
+
+1. 有相同的类型（byte、char、int等）。
+2. Buffer中剩余的byte、char等的个数相等。
+3. Buffer中所有剩余的byte、char等都相同。
+
+如你所见，equals只是比较Buffer的一部分，不是每一个在它里面的元素都比较。实际上，它只比较Buffer中的剩余元素。
+
+compareTo()方法
+
+compareTo()方法比较两个Buffer的剩余元素(byte、char等)， 如果满足下列条件，则认为一个Buffer“小于”另一个Buffer：
+
+1. 第一个不相等的元素小于另一个Buffer中对应的元素 。
+2. 所有元素都相等，但第一个Buffer比另一个先耗尽(第一个Buffer的元素个数比另一个少)。
+
+*（译注：剩余元素是从 position到limit之间的元素）*
+
+## DirectBuffer
+
+HeapByteBuffer和DirectByteBuffer的区别在于HeapByteBuffer是在Java Heap上分配的，但是Java NIO在读写到相应的Channel的时候，会先将Java Heap的buffer内容拷贝至直接内存——Direct Memory。这样的话，无疑DirectByteBuffer的IO性能肯定强于使用HeapByteBuffer，它省去了临时buffer的拷贝开销，这也是为什么各个NIO框架大多使用DirectByteBuffer的原因。
+
+**原因**
+
+底层通过write、read、pwrite，pread函数进行系统调用时，需要传入buffer的起始地址和buffer count作为参数。
+
+如果使用java heap的话，我们知道jvm中buffer往往以byte[] 的形式存在，这是一个特殊的对象，由于java heap GC的存在，这里对象在堆中的位置往往会发生移动，移动后我们传入系统函数的地址参数就不是真正的buffer地址了，这样的话无论读写都会发生出错。而C Heap仅仅受Full GC的影响，相对来说地址稳定。
+
+```java
+void prepareBuffers() {
+// ... 省略
+	if (!(src instanceof DirectBuffer)) { // 如果不是堆外内存
+	// substitute with direct buffer
+		int rem = (pos <= lim ? lim - pos : 0);
+		ByteBuffer bb = Util.getTemporaryDirectBuffer(rem); // 创建一份与原堆内内存可读大小相当的堆外内存
+		bb.put(src); // copy 发生处，将堆内的数据拷贝到堆外
+		bb.flip();
+		src.position(pos);  // leave heap buffer untouched for now
+		shadow[i] = bb;
+		a = ((DirectBuffer)bb).address();
+	} 
+    else {
+		shadow[i] = src;
+		a = ((DirectBuffer)src).address() + pos;
+	}
+	unsafe.putAddress(address + OFFSETOF_BUF, a);
+	unsafe.putInt(address + OFFSETOF_LEN, rem);
+	address += SIZEOF_WSABUF;
+}
+```
+
+## 异步处理
+
+异步的概念和同步相对。当一个异步过程调用发出后，调用者不能立刻得到结果。实际处理这个调用的部件在完成后，通过状态、通知和回调来通知调用者。
+
+Netty中的I/O操作是异步的，包括bind、write、connect等操作会简单的返回一个ChannelFuture，调用者并不能立刻获得结果，通过Future-Listener机制，用户可以方便的主动获取或者通过通知机制获得IO操作结果。
+
+当future对象刚刚创建时，处于非完成状态，调用者可以通过返回的ChannelFuture来获取操作执行的状态，注册监听函数来执行完成后的操，常见有如下操作：
+
+- 通过isDone方法来判断当前操作是否完成
+- 通过isSuccess方法来判断已完成的当前操作是否成功
+- 通过getCause方法来获取已完成的当前操作失败的原因
+- 通过isCancelled方法来判断已完成的当前操作是否被取消
+- 通过addListener方法来注册监听器，当操作已完成(isDone方法返回完成)，将会通知指定的监听器；如果future对象已完成，则理解通知指定的监听器
+
+例如下面的的代码中绑定端口是异步操作，当绑定操作处理完，将会调用相应的监听器处理逻辑
+
+```java
+    serverBootstrap.bind(port).addListener(future -> {
+        if (future.isSuccess()) {
+            System.out.println(new Date() + ": 端口[" + port + "]绑定成功!");
+        } else {
+            System.err.println("端口[" + port + "]绑定失败!");
+        }
+    });
+```
+
+相比传统阻塞I/O，执行I/O操作后线程会被阻塞住, 直到操作完成；异步处理的好处是不会造成线程阻塞，线程在I/O操作期间可以执行别的程序，在高并发情形下会更稳定和更高的吞吐量。
+
+# Netty的线程模型
+
+Reactor是反应堆的意思，Reactor模型，是指通过一个或多个输入同时传递给服务处理器的服务请求的**事件驱动处理模式**。 服务端程序处理传入多路请求，并将它们同步分派给请求对应的处理线程，Reactor模式也叫Dispatcher模式，即I/O多了复用统一监听事件，收到事件后分发(Dispatch给某进程)，是编写高性能网络服务器的必备技术之一。
+
+**单线程模型**
+
+所有I/O操作都由一个线程完成，即多路复用、事件分发和处理都是在一个Reactor线程上完成的。既要接收客户端的连接请求,向服务端发起连接，又要发送/读取请求或应答/响应消息。一个NIO 线程同时处理成百上千的链路，性能上无法支撑，速度慢，若线程进入死循环，整个程序不可用，对于高负载、大并发的应用场景不合适。
+
+![img](../img/772134-20191117084641969-51494616.png)
+
+- 一个NIO线程同时处理成百上千的连接，性能上无法支撑，即便NIO线程的CPU负荷达到100%，也无法满足海量消息的编码、解码、读取和发送。
+- 当NIO线程负载过重之后，处理速度将变慢，这会导致大量客户端连接超时，超时之后往往会进行重发，这更加重了NIO线程的负载，最终会导致大量消息积压和处理超时，成为系统的性能瓶颈。
+- 可靠性问题：一旦NIO线程意外跑飞，或者进入死循环，会导致整个系统通信模块不可用，不能接收和处理外部消息，造成节点故障。
+
+> 注意，Redis的请求处理也是单线程模型，为什么Redis的性能会如此之高呢？因为Redis的读写操作基本都是内存操作，并且Redis协议比较简洁，序列化/反序列化耗费性能更低
+
+**多线程模型**
+
+有一个NIO 线程（Acceptor） 只负责监听服务端，接收客户端的TCP 连接请求；NIO 线程池负责网络IO 的操作，即消息的读取、解码、编码和发送；1 个NIO 线程可以同时处理N 条链路，但是1 个链路只对应1 个NIO 线程，这是为了防止发生并发操作问题。
+
+- 但在并发百万客户端连接或需要安全认证时，一个Acceptor 线程可能会存在性能不足问题。
+
+![img](../img/772134-20191117085027978-1532036245.png)
+
+**主从多线程模型**
+
+主从 Reactor 线程模型的特点是：服务端用于接收客户端连接的不再是一个单独的 NIO 线程，而是一个独立的 NIO 线程池。Acceptor 接收到客户端 TCP连接请求并处理完成后（可能包含接入认证等），将新创建的 SocketChannel注 册 到 I/O 线 程 池（sub reactor 线 程 池）的某个I/O线程上， 由它负责SocketChannel 的读写和编解码工作。Acceptor 线程池仅仅用于客户端的登录、握手和安全认证，一旦链路建立成功，就将链路注册到后端 subReactor 线程池的 I/O 线程上，由 I/O 线程负责后续的 I/O 操作。
+
+![img](../img/772134-20191117084714072-1720842406.png)
+
+- MainReactor负责客户端的连接请求，并将请求转交给SubReactor
+- SubReactor负责相应通道的IO读写请求
+- 非IO请求（具体逻辑处理）的任务则会直接写入队列，等待worker threads进行处理
+
+这里引用Doug Lee大神的Reactor介绍：[Scalable IO in Java](http://gee.cs.oswego.edu/dl/cpjslides/nio.pdf)里面关于主从Reactor多线程模型的图
+
+![主从Rreactor多线程模型](../img/aHR0cHM6Ly91c2VyLWdvbGQtY2RuLnhpdHUuaW8vMjAxOC8xMS8xLzE2NmNjYmJkYzY5OGRkZDY)
+
+特别说明的是： 虽然Netty的线程模型基于主从Reactor多线程，借用了MainReactor和SubReactor的结构，但是实际实现上，SubReactor和Worker线程在同一个线程池中：
+
+```java
+EventLoopGroup bossGroup = new NioEventLoopGroup();
+EventLoopGroup workerGroup = new NioEventLoopGroup();
+ServerBootstrap server = new ServerBootstrap();
+server.group(bossGroup, workerGroup)
+ .channel(NioServerSocketChannel.class)
+```
+
+上面代码中的bossGroup 和workerGroup是Bootstrap构造方法中传入的两个对象，这两个group均是线程池
+
+- bossGroup线程池则只是在bind某个端口后，获得其中一个线程作为MainReactor，专门处理端口的accept事件，**每个端口对应一个boss线程**
+- workerGroup线程池会被各个SubReactor和worker线程充分利用
+
+
+
+> 前面是链接的过程
+>
+> 后面是I/O的过程
+
+**I/O**
+
+为了尽可能地提升性能，Netty 在很多地方进行了无锁化的设计，例如在 I/O 线程内部进行串行操作，避免多线程竞争导致的性能下降问题。表面上看，串行化设计似乎 CPU 利用率不高，并发程度不够。但是，通过调整 NIO 线程池的线程参数，可以同时启动多个串行化的线程并行运行，这种局部无锁化的串行线程设计相比一个队列多个工作线程的模型性能更优。
+
+![img](../img/772134-20191117084743052-2138552123.png)
+
+Netty 的 NioEventLoop 读取到消息之后，直接调用 ChannelPipeline 的`fireChannelRead (Object msg)`。 只要用户不主动切换线程， 一直都是由NioEventLoop 调用用户的 ChannelHandler，期间不进行线程切换。这种串行化处理方式避免了多线程操作导致的锁的竞争，从性能角度看是最优的。
+
+Netty拥有两个NIO线程池，分别是`bossGroup`和`workerGroup`，前者处理新建连接请求，然后将新建立的连接轮询交给workerGroup中的其中一个NioEventLoop来处理，后续该连接上的读写操作都是由同一个NioEventLoop来处理。注意，虽然bossGroup也能指定多个NioEventLoop（一个NioEventLoop对应一个线程），但是默认情况下只会有一个线程，因为一般情况下应用程序只会使用一个对外监听端口。
+
+> 这里试想一下，难道不能使用多线程来监听同一个对外端口么，即多线程epoll_wait到同一个epoll实例上？
+
+epoll相关的主要两个方法是epoll_wait和epoll_ctl，多线程同时操作同一个epoll实例，那么首先需要确认epoll相关方法是否线程安全：**简单来说，epoll是通过锁来保证线程安全的, epoll中粒度最小的自旋锁ep->lock(spinlock)用来保护就绪的队列, 互斥锁ep->mtx用来保护epoll的重要数据结构红黑树**。
+
+看到这里，可能有的小伙伴想到了Nginx多进程针对监听端口的处理策略，Nginx是通过accept_mutex机制来保证的。accept_mutex是nginx的(新建连接)负载均衡锁，让多个worker进程轮流处理与client的新连接。当某个worker进程的连接数达到worker_connections配置（单个worker进程的最大处理连接数）的最大连接数的7/8时，会大大减小获取该worker获取accept锁的概率，以此实现各worker进程间的连接数的负载均衡。accept锁默认打开，关闭它时nginx处理新建连接耗时会更短，但是worker进程之间可能连接不均衡，并且存在“惊群”问题。只有在使能accept_mutex并且当前系统不支持原子锁时，才会用文件实现accept锁。注意，accept_mutex加锁失败时不会阻塞当前线程，类似tryLock。
+
+> 现代linux中，多个socker同时监听同一个端口也是可行的，nginx 1.9.1也支持这一行为。linux 3.9以上内核支持SO_REUSEPORT选项，允许多个socker bind/listen在同一端口上。这样，多个进程可以各自申请socker监听同一端口，当连接事件来临时，内核做负载均衡，唤醒监听的其中一个进程来处理，reuseport机制有效的解决了epoll惊群问题。
+
+再回到刚才提出的问题，java中多线程来监听同一个对外端口，epoll方法是线程安全的，这样就可以使用使用多线程监听epoll_wait了么，当然是不建议这样干的，除了epoll的惊群问题之外，还有一个就是，一般开发中我们使用epoll设置的是LT模式（`水平触发方式，与之相对的是ET默认，前者只要连接事件未被处理就会在epoll_wait时始终触发，后者只会在真正有事件来时在epoll_wait触发一次`），这样的话，多线程epoll_wait时就会导致第一个线程epoll_wait之后还未处理完毕已发生的事件时，第二个线程也会epoll_wait返回，显然这不是我们想要的
+
+# Netty 的零拷贝
+
+Netty 的零拷贝主要包含三个方面：
+
+- Netty 的接收和发送 ByteBuffer 采用 DIRECT BUFFERS，使用堆外直接内存进行 Socket 读写，不需要进行字节缓冲区的二次拷贝。如果使用传统的堆内存（HEAP BUFFERS）进行 Socket 读写，JVM 会将堆内存 Buffer 拷贝一份到直接内存中，然后才写入 Socket 中。相比于堆外直接内存，消息在发送过程中多了一次缓冲区的内存拷贝。
+- Netty 提供了组合 Buffer 对象，可以聚合多个 ByteBuffer 对象，用户可以像操作一个 Buffer 那样方便的对组合 Buffer 进行操作，避免了传统通过内存拷贝的方式将几个小 Buffer 合并成一个大的 Buffer。
+- Netty 的文件传输采用了 transferTo 方法，它可以直接将文件缓冲区的数据发送到目标 Channel，避免了传统通过循环 write 方式导致的内存拷贝问题。
+
+# Netty 发送消息方式
+
+Netty 有两种发送消息的方式：
+
+- 直接写入 Channel 中，消息从 ChannelPipeline 当中尾部开始移动；
+- 写入和 ChannelHandler 绑定的 ChannelHandlerContext 中，消息从 ChannelPipeline 中的下一个 ChannelHandler 中移动。
+
+# Netty 起多少线程？何时启动？
+
+Netty 默认是 CPU 处理器数的两倍，bind 完之后启动。
+
+# Netty 支持心跳类型设置
+
+- readerIdleTime：为读超时时间（即测试端一定时间内未接受到被测试端消息）。
+- writerIdleTime：为写超时时间（即测试端一定时间内向被测试端发送消息）。
+- allIdleTime：所有类型的超时时间。
+
+# Netty 和 Tomcat
+
+- 作用不同：Tomcat 是 Servlet 容器，可以视为 Web 服务器，而 Netty 是异步事件驱动的网络应用程序框架和工具用于简化网络编程，例如TCP和UDP套接字服务器。
+- 协议不同：Tomcat 是基于 http 协议的 Web 服务器，而 Netty 能通过编程自定义各种协议，因为 Netty 本身自己能编码/解码字节流，所有 Netty 可以实现，HTTP 服务器、FTP 服务器、UDP 服务器、RPC 服务器、WebSocket 服务器、Redis 的 Proxy 服务器、MySQL 的 Proxy 服务器等等。
+
+# Netty架构设计
+
+前面介绍完Netty相关一些理论介绍，下面从功能特性、模块组件、运作过程来介绍Netty的架构设计
+
+### 功能特性
+
+![Netty功能特性图](../img/aHR0cHM6Ly91c2VyLWdvbGQtY2RuLnhpdHUuaW8vMjAxOC8xMS8xLzE2NmNjYmJkYzg2MTRjOGY)
+
+- 传输服务 支持BIO和NIO
+- 容器集成 支持OSGI、JBossMC、Spring、Guice容器
+- 协议支持 HTTP、Protobuf、二进制、文本、WebSocket等一系列常见协议都支持。 还支持通过实行编码解码逻辑来实现自定义协议
+- Core核心 可扩展事件模型、通用通信API、支持零拷贝的ByteBuf缓冲对象
+
+### 模块组件
+
+#### Bootstrap、ServerBootstrap
+
+Bootstrap意思是引导，一个Netty应用通常由一个Bootstrap开始，主要作用是配置整个Netty程序，串联各个组件，Netty中Bootstrap类是客户端程序的启动引导类，ServerBootstrap是服务端启动引导类。
+
+#### Future、ChannelFuture
+
+正如前面介绍，在Netty中所有的IO操作都是异步的，不能立刻得知消息是否被正确处理，但是可以过一会等它执行完成或者直接注册一个监听，具体的实现就是通过Future和ChannelFutures，他们可以注册一个监听，当操作执行成功或失败时监听会自动触发注册的监听事件。
+
+#### Channel
+
+Netty网络通信的组件，能够用于执行网络I/O操作。 Channel为用户提供：
+
+- 当前网络连接的通道的状态（例如是否打开？是否已连接？）
+- 网络连接的配置参数 （例如接收缓冲区大小）
+- 提供异步的网络I/O操作(如建立连接，读写，绑定端口)，异步调用意味着任何I / O调用都将立即返回，并且不保证在调用结束时所请求的I / O操作已完成。调用立即返回一个ChannelFuture实例，通过注册监听器到ChannelFuture上，可以I / O操作成功、失败或取消时回调通知调用方。
+- 支持关联I/O操作与对应的处理程序
+
+不同协议、不同的阻塞类型的连接都有不同的 Channel 类型与之对应，下面是一些常用的 Channel 类型
+
+- NioSocketChannel，异步的客户端 TCP Socket 连接
+- NioServerSocketChannel，异步的服务器端 TCP Socket 连接
+- NioDatagramChannel，异步的 UDP 连接
+- NioSctpChannel，异步的客户端 Sctp 连接
+- NioSctpServerChannel，异步的 Sctp 服务器端连接 这些通道涵盖了 UDP 和 TCP网络 IO以及文件 IO.
+
+#### Selector
+
+Netty基于Selector对象实现I/O多路复用，通过 Selector, 一个线程可以监听多个连接的Channel事件, 当向一个Selector中注册Channel 后，Selector 内部的机制就可以自动不断地查询(select) 这些注册的Channel是否有已就绪的I/O事件(例如可读, 可写, 网络连接完成等)，这样程序就可以很简单地使用一个线程高效地管理多个 Channel 。
+
+#### NioEventLoop
+
+NioEventLoop中维护了一个线程和任务队列，支持异步提交执行任务，线程启动时会调用NioEventLoop的run方法，执行I/O任务和非I/O任务：
+
+- I/O任务 即selectionKey中ready的事件，如accept、connect、read、write等，由processSelectedKeys方法触发。
+- 非IO任务 添加到taskQueue中的任务，如register0、bind0等任务，由runAllTasks方法触发。
+
+两种任务的执行时间比由变量ioRatio控制，默认为50，则表示允许非IO任务执行的时间与IO任务的执行时间相等。
+
+#### NioEventLoopGroup
+
+NioEventLoopGroup，主要管理eventLoop的生命周期，可以理解为一个线程池，内部维护了一组线程，每个线程(NioEventLoop)负责处理多个Channel上的事件，而一个Channel只对应于一个线程。
+
+> 一对多的关系
+
+#### ChannelHandler
+
+ChannelHandler是一个接口，处理I / O事件或拦截I / O操作，并将其转发到其ChannelPipeline(业务处理链)中的下一个处理程序。
+
+ChannelHandler本身并没有提供很多方法，因为这个接口有许多的方法需要实现，方便使用期间，可以继承它的子类：
+
+- ChannelInboundHandler用于处理入站I / O事件
+- ChannelOutboundHandler用于处理出站I / O操作
+
+或者使用以下适配器类：
+
+- ChannelInboundHandlerAdapter用于处理入站I / O事件
+- ChannelOutboundHandlerAdapter用于处理出站I / O操作
+- ChannelDuplexHandler用于处理入站和出站事件
+
+#### ChannelHandlerContext
+
+保存Channel相关的所有上下文信息，同时关联一个ChannelHandler对象
+
+#### ChannelPipline
+
+保存ChannelHandler的List，用于处理或拦截Channel的入站事件和出站操作。 ChannelPipeline实现了一种高级形式的拦截过滤器模式，使用户可以完全控制事件的处理方式，以及Channel中各个的ChannelHandler如何相互交互。
+
+下图引用Netty的Javadoc4.1中ChannelPipline的说明，描述了ChannelPipeline中ChannelHandler通常如何处理I/O事件。 I/O事件由ChannelInboundHandler或ChannelOutboundHandler处理，并通过调用ChannelHandlerContext中定义的事件传播方法（例如ChannelHandlerContext.fireChannelRead（Object）和ChannelOutboundInvoker.write（Object））转发到其最近的处理程序。
+
+```
+                                                 I/O Request
+                                            via Channel or
+                                        ChannelHandlerContext
+                                                      |
+  +---------------------------------------------------+---------------+
+  |                           ChannelPipeline         |               |
+  |                                                  \|/              |
+  |    +---------------------+            +-----------+----------+    |
+  |    | Inbound Handler  N  |            | Outbound Handler  1  |    |
+  |    +----------+----------+            +-----------+----------+    |
+  |              /|\                                  |               |
+  |               |                                  \|/              |
+  |    +----------+----------+            +-----------+----------+    |
+  |    | Inbound Handler N-1 |            | Outbound Handler  2  |    |
+  |    +----------+----------+            +-----------+----------+    |
+  |              /|\                                  .               |
+  |               .                                   .               |
+  | ChannelHandlerContext.fireIN_EVT() ChannelHandlerContext.OUT_EVT()|
+  |        [ method call]                       [method call]         |
+  |               .                                   .               |
+  |               .                                  \|/              |
+  |    +----------+----------+            +-----------+----------+    |
+  |    | Inbound Handler  2  |            | Outbound Handler M-1 |    |
+  |    +----------+----------+            +-----------+----------+    |
+  |              /|\                                  |               |
+  |               |                                  \|/              |
+  |    +----------+----------+            +-----------+----------+    |
+  |    | Inbound Handler  1  |            | Outbound Handler  M  |    |
+  |    +----------+----------+            +-----------+----------+    |
+  |              /|\                                  |               |
+  +---------------+-----------------------------------+---------------+
+                  |                                  \|/
+  +---------------+-----------------------------------+---------------+
+  |               |                                   |               |
+  |       [ Socket.read() ]                    [ Socket.write() ]     |
+  |                                                                   |
+  |  Netty Internal I/O Threads (Transport Implementation)            |
+  +-------------------------------------------------------------------+
+
+123456789101112131415161718192021222324252627282930313233343536373839
+```
+
+入站事件由自下而上方向的入站处理程序处理，如图左侧所示。 入站Handler处理程序通常处理由图底部的I / O线程生成的入站数据。 通常通过实际输入操作（例如SocketChannel.read（ByteBuffer））从远程读取入站数据。
+
+出站事件由上下方向处理，如图右侧所示。 出站Handler处理程序通常会生成或转换出站传输，例如write请求。 I/O线程通常执行实际的输出操作，例如SocketChannel.write（ByteBuffer）。
+
+在 Netty 中每个 Channel 都有且仅有一个 ChannelPipeline 与之对应, 它们的组成关系如下:
+
+![img](../img/aHR0cHM6Ly91c2VyLWdvbGQtY2RuLnhpdHUuaW8vMjAxOC8xMS8xLzE2NmNjYmJkYzhjZDFhMmY)
+
+一个 Channel 包含了一个 ChannelPipeline, 而 ChannelPipeline 中又维护了一个由 ChannelHandlerContext 组成的双向链表, 并且每个 ChannelHandlerContext 中又关联着一个 ChannelHandler。入站事件和出站事件在一个双向链表中，入站事件会从链表head往后传递到最后一个入站的handler，出站事件会从链表tail往前传递到最前一个出站的handler，两种类型的handler互不干扰。
+
+### 工作原理架构
+
+初始化并启动Netty服务端过程如下：
+
+```java
+    public static void main(String[] args) {
+        // 创建mainReactor
+        NioEventLoopGroup boosGroup = new NioEventLoopGroup();
+        // 创建工作线程组
+        NioEventLoopGroup workerGroup = new NioEventLoopGroup();
+
+        final ServerBootstrap serverBootstrap = new ServerBootstrap();
+        serverBootstrap 
+                 // 组装NioEventLoopGroup 
+                .group(boosGroup, workerGroup)
+                 // 设置channel类型为NIO类型
+                .channel(NioServerSocketChannel.class)
+                // 设置连接配置参数
+                .option(ChannelOption.SO_BACKLOG, 1024)
+                .childOption(ChannelOption.SO_KEEPALIVE, true)
+                .childOption(ChannelOption.TCP_NODELAY, true)
+                // 配置入站、出站事件handler
+                .childHandler(new ChannelInitializer<NioSocketChannel>() {
+                    @Override
+                    protected void initChannel(NioSocketChannel ch) {
+                        // 配置入站、出站事件channel
+                        ch.pipeline().addLast(...);
+                        ch.pipeline().addLast(...);
+                    }
+    });
+
+        // 绑定端口
+        int port = 8080;
+        serverBootstrap.bind(port).addListener(future -> {
+            if (future.isSuccess()) {
+                System.out.println(new Date() + ": 端口[" + port + "]绑定成功!");
+            } else {
+                System.err.println("端口[" + port + "]绑定失败!");
+            }
+        });
+}
+
+12345678910111213141516171819202122232425262728293031323334353637
+```
+
+- 基本过程如下：
+- 1 初始化创建2个NioEventLoopGroup，其中boosGroup用于Accetpt连接建立事件并分发请求， workerGroup用于处理I/O读写事件和业务逻辑
+- 2 基于ServerBootstrap(服务端启动引导类)，配置EventLoopGroup、Channel类型，连接参数、配置入站、出站事件handler
+- 3 绑定端口，开始工作
+
+结合上面的介绍的Netty Reactor模型，介绍服务端Netty的工作架构图：
+
+![服务端Netty Reactor工作架构图](../img/aHR0cHM6Ly91c2VyLWdvbGQtY2RuLnhpdHUuaW8vMjAxOC8xMS8xLzE2NmNjYmJkYzlhN2NhYmU)
+
+server端包含1个Boss NioEventLoopGroup和1个Worker NioEventLoopGroup，NioEventLoopGroup相当于1个事件循环组，这个组里包含多个事件循环NioEventLoop，每个NioEventLoop包含1个selector和1个事件循环线程。
+
+每个Boss NioEventLoop循环执行的任务包含3步：
+
+- 1 轮询accept事件
+- 2 处理accept I/O事件，与Client建立连接，生成NioSocketChannel，并将NioSocketChannel注册到某个Worker NioEventLoop的Selector上 *3 处理任务队列中的任务，runAllTasks。任务队列中的任务包括用户调用eventloop.execute或schedule执行的任务，或者其它线程提交到该eventloop的任务。
+
+每个Worker NioEventLoop循环执行的任务包含3步：
+
+- 1 轮询read、write事件；
+- 2 处I/O事件，即read、write事件，在NioSocketChannel可读、可写事件发生时进行处理
+- 3 处理任务队列中的任务，runAllTasks。
+
+其中任务队列中的task有3种典型使用场景
+
+- 1 用户程序自定义的普通任务
+
+```java
+ctx.channel().eventLoop().execute(new Runnable() {
+    @Override
+    public void run() {
+        //...
+    }
+});
+
+1234567
+```
+
+- 2 非当前reactor线程调用channel的各种方法 例如在推送系统的业务线程里面，根据用户的标识，找到对应的channel引用，然后调用write类方法向该用户推送消息，就会进入到这种场景。最终的write会提交到任务队列中后被异步消费。
+- 3 用户自定义定时任务
+
+```java
+ctx.channel().eventLoop().schedule(new Runnable() {
+    @Override
+    public void run() {
+
+    }
+}, 60, TimeUnit.SECONDS);
+
+1234567
+```
+
+
+
+
+
+# 了解哪几种序列化协议？
+
+序列化（编码）是将对象序列化为二进制形式（字节数组），主要用于网络传输、数据持久化等；而反序列化（解码）则是将从网络、磁盘等读取的字节数组还原成原始对象，主要用于网络传输对象的解码，以便完成远程调用。
+
+影响序列化性能的关键因素：序列化后的码流大小（网络带宽的占用）、序列化的性能（CPU资源占用）；是否支持跨语言（异构系统的对接和开发语言切换）。
+
+Java默认提供的序列化：无法跨语言、序列化后的码流太大、序列化的性能差
+
+XML，优点：人机可读性好，可指定元素或特性的名称。缺点：序列化数据只包含数据本身以及类的结构，不包括类型标识和程序集信息；只能序列化公共属性和字段；不能序列化方法；文件庞大，文件格式复杂，传输占带宽。适用场景：当做配置文件存储数据，实时数据转换。
+
+JSON，是一种轻量级的数据交换格式，优点：兼容性高、数据格式比较简单，易于读写、序列化后数据较小，可扩展性好，兼容性好、与XML相比，其协议比较简单，解析速度比较快。缺点：数据的描述性比XML差、不适合性能要求为ms级别的情况、额外空间开销比较大。适用场景（可替代ＸＭＬ）：跨防火墙访问、可调式性要求高、基于Web browser的Ajax请求、传输数据量相对小，实时性要求相对低（例如秒级别）的服务。
+
+Fastjson，采用一种“假定有序快速匹配”的算法。优点：接口简单易用、目前java语言中最快的json库。缺点：过于注重快，而偏离了“标准”及功能性、代码质量不高，文档不全。适用场景：协议交互、Web输出、Android客户端
+
+Thrift，不仅是序列化协议，还是一个RPC框架。优点：序列化后的体积小, 速度快、支持多种语言和丰富的数据类型、对于数据字段的增删具有较强的兼容性、支持二进制压缩编码。缺点：使用者较少、跨防火墙访问时，不安全、不具有可读性，调试代码时相对困难、不能与其他传输层协议共同使用（例如HTTP）、无法支持向持久层直接读写数据，即不适合做数据持久化序列化协议。适用场景：分布式系统的RPC解决方案
+
+Avro，Hadoop的一个子项目，解决了JSON的冗长和没有IDL的问题。优点：支持丰富的数据类型、简单的动态语言结合功能、具有自我描述属性、提高了数据解析速度、快速可压缩的二进制数据形式、可以实现远程过程调用RPC、支持跨编程语言实现。缺点：对于习惯于静态类型语言的用户不直观。适用场景：在Hadoop中做Hive、Pig和MapReduce的持久化数据格式。
+
+Protobuf，将数据结构以.proto文件进行描述，通过代码生成工具可以生成对应数据结构的POJO对象和Protobuf相关的方法和属性。优点：序列化后码流小，性能高、结构化数据存储格式（XML JSON等）、通过标识字段的顺序，可以实现协议的前向兼容、结构化的文档更容易管理和维护。缺点：需要依赖于工具生成代码、支持的语言相对较少，官方只支持Java 、C++ 、python。适用场景：对性能要求高的RPC调用、具有良好的跨防火墙的访问属性、适合应用层对象的持久化
+
+其它
+
+protostuff 基于protobuf协议，但不需要配置proto文件，直接导包即可
+Jboss marshaling 可以直接序列化java类， 无须实java.io.Serializable接口
+Message pack 一个高效的二进制序列化格式
+Hessian 采用二进制协议的轻量级remoting onhttp工具
+kryo 基于protobuf协议，只支持java语言,需要注册（Registration），然后序列化（Output），反序列化（Input）
+
+# 如何选择序列化协议？
+
+具体场景
+
+对于公司间的系统调用，如果性能要求在100ms以上的服务，基于XML的SOAP协议是一个值得考虑的方案。
+基于Web browser的Ajax，以及Mobile app与服务端之间的通讯，JSON协议是首选。对于性能要求不太高，或者以动态类型语言为主，或者传输数据载荷很小的的运用场景，JSON也是非常不错的选择。
+对于调试环境比较恶劣的场景，采用JSON或XML能够极大的提高调试效率，降低系统开发成本。
+当对性能和简洁性有极高要求的场景，Protobuf，Thrift，Avro之间具有一定的竞争关系。
+对于T级别的数据的持久化应用场景，Protobuf和Avro是首要选择。如果持久化后的数据存储在hadoop子项目里，Avro会是更好的选择。
+
+对于持久层非Hadoop项目，以静态类型语言为主的应用场景，Protobuf会更符合静态类型语言工程师的开发习惯。由于Avro的设计理念偏向于动态类型语言，对于动态语言为主的应用场景，Avro是更好的选择。
+如果需要提供一个完整的RPC解决方案，Thrift是一个好的选择。
+如果序列化之后需要支持不同的传输层协议，或者需要跨防火墙访问的高性能场景，Protobuf可以优先考虑。
+protobuf的数据类型有多种：bool、double、float、int32、int64、string、bytes、enum、message。protobuf的限定符：required: 必须赋值，不能为空、optional:字段可以赋值，也可以不赋值、repeated: 该字段可以重复任意次数（包括0次）、枚举；只能用指定的常量集中的一个值作为其值；
+
+protobuf的基本规则：每个消息中必须至少留有一个required类型的字段、包含0个或多个optional类型的字段；repeated表示的字段可以包含0个或多个数据；[1,15]之内的标识号在编码的时候会占用一个字节（常用），[16,2047]之内的标识号则占用2个字节，标识号一定不能重复、使用消息类型，也可以将消息嵌套任意多层，可用嵌套消息类型来代替组。
+
+protobuf的消息升级原则：不要更改任何已有的字段的数值标识；不能移除已经存在的required字段，optional和repeated类型的字段可以被移除，但要保留标号不能被重用。新添加的字段必须是optional或repeated。因为旧版本程序无法读取或写入新增的required限定符的字段。
+
+编译器为每一个消息类型生成了一个.java文件，以及一个特殊的Builder类（该类是用来创建消息类接口的）。如：UserProto.User.Builder builder = UserProto.User.newBuilder();builder.build()；
+
+Netty中的使用：ProtobufVarint32FrameDecoder 是用于处理半包消息的解码类；ProtobufDecoder(UserProto.User.getDefaultInstance())这是创建的UserProto.java文件中的解码类；ProtobufVarint32LengthFieldPrepender 对protobuf协议的消息头上加上一个长度为32的整形字段，用于标志这个消息的长度的类；ProtobufEncoder 是编码类
+
+将StringBuilder转换为ByteBuf类型：copiedBuffer()方法

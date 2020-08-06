@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      JAVA核心技术笔记之二
-subtitle:   java类相关内容。多态、继承、重载是面向对象的核心。
+subtitle:   java类相关内容。多态、继承、重载是面向对象的核心。异常、断言、日志。泛型。
 date:       2020-07-28
 author:     deponia
 header-img: img/post-sisyphus.jpg
@@ -1014,3 +1014,547 @@ class PeopleGoToToilot{
 }
 ```
 
+# 7.异常、断言、日志
+
+## 7.1 异常概念
+
+![image-20200804131124332](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/image-20200804131124332.png)
+
+- 非检查型：派生于Error和RuntimeException
+
+  > 要么在你控制之外Error
+  >
+  > 要么一开始就该避免RuntimeException
+
+- 检查型：除上面的其他异常
+
+  > 一个方法应该尽可能抛出所有检查型异常
+
+通过继承编写自己的异常
+
+`throws`声明方法抛出的异常
+
+> 可以将异常向上传播
+
+`throw`代码中抛出异常
+
+**捕获异常**
+
+try-catch
+
+```java
+try{
+    
+}catch(Exception e){
+    
+    //如果只是想记录一下继续抛出，catch也是可以继续throw的
+    throw e;
+}finally{
+    //无论异常是否发生，一定会执行的，用来处理关闭一些声明的资源
+}
+//可以catch多个分别处理
+//异常变量是隐式final的
+```
+
+try-with-resource
+
+```java
+//声明多个资源变量，结尾会自动调用close()
+//声明多个的时候，try-catch的形式需要嵌套try-catch。写法麻烦，可以用这种
+try(var in = new Scanner();var out = new ...){
+    
+}
+```
+
+**打印异常**
+
+Throwable的`printStackTrace()`
+
+## 7.2 异常使用规范
+
+不要只抛出RuntimeException、Throwable 粒度太大了，寻找适合的子类
+
+不要拿异常代替测试
+
+不要过分的细化异常
+
+> 每一条语句都放进一个try-catch，代码量会膨胀
+>
+> 一个大的trycatch然后catch几个异常就好了
+
+不要压制异常，不对异常进行处理
+
+不要羞于传递异常
+
+> 最后两点就是，早抛出、晚捕获
+
+## 7.3 断言概念
+
+判断属性是否符合要求
+
+`assert x>=0;`
+
+断言不存储具体的表达式值、不符合产生AssertionError
+
+- 不可恢复致命的
+- 只在开发和测试阶段使用
+
+**启动断言**
+
+java -enableassertions app，可以指定是哪些包
+
+默认是禁止的
+
+启动断言是类加载器的功能，不需要重新编译，不会影响速度
+
+## 7.4 日志概念
+
+**作用**
+
+- 重定向记录
+- 过滤记录
+- 多种格式化方式
+- 可以使用多个日志记录器
+- 由配置文件控制
+- 禁止、取消、使用简单（可以控制到每一级的日志）
+
+**日志级别**
+
+- SEVERE
+- WARNING
+- INFO
+- CONFIG
+- FINE
+- FINER
+- FINEST
+
+> 好像实际和书不太一样
+>
+> 从上往下 优先级越低
+>
+> 日志记录器（Logger）的行为是分等级的。分为 - OFF - FATAL - WARN - INFO - DEBUG - TRACE - ALL 
+
+默认只记录前三个，开启某个级别，会记录它和更高级别的日志
+
+可以用后四个记录对用户意义不大的调试信息
+
+Level.ALL开启所有级别 OFF关闭所有
+
+```java
+//自由指定
+logger.warning();
+logger.info();
+logger.log(Level.FINE,..);
+```
+
+
+
+**SLF4J**
+
+- java的同一日志API，需要自己提供实现
+- Logback Log4J 2 这些实现自由选择
+
+## 7.5 日志使用
+
+**使用**
+
+```java
+//全局日志记录器
+Logger.getGlobal().info(..);
+//取消，在这条语句之后执行的所有日志记录都会失效
+Logger.getGlobal().setLevel(Level.OFF);
+//高级日志,未被变量引用的日志会被gc回收，所以要生成静态的。日志层次结构与包名类似
+private static final Logger mylogger = Logger.getLogger("com.mycompany.myapp");
+```
+
+**配置**
+
+conf/logging.properties
+
+java9之前在jre/lib/logging.properties
+
+想要使用自定义的属性
+
+`java -Djava.util.logging.config.file=configFile MainClass`
+
+具体属性修改自己上网查吧
+
+**本地化**
+
+日志记录成不同语言，用到再查吧
+
+**处理器**
+
+日志会将记录发生到ConsoleHandler再由它输出到System.err
+
+> 逐层向上的，会发给父处理器，然后继续向上，最终的祖先处理器（名为“”）有个ConsoleHandler
+
+处理器也有之日志级别
+
+最终的日志等级会取处理器和日志记录器级别的阈值（）
+
+想要修改日志等级，必须在上述配置中同时修改
+
+**输出到文件**
+
+```bash
+//0 1 2 in out err流
+java app > log.txt
+//错误流
+java app 2> log.txt
+//错误流输出流同时
+java app 2> log.txt 1>&2
+```
+
+# 8.泛型程序设计
+
+## 8.1 使用
+
+**泛型类**
+
+```{java
+public class Test<T>{
+    //内部可以用T
+}
+```
+
+**泛型方法**
+
+- 可以在普通类定义也可以在泛型类
+
+```java
+public class Test{
+    //类不是泛型 方法是泛型的
+    public static <T> T getM(T.. a){
+        ....
+    }
+}
+
+//调用方式
+Test.<String>getM(..);
+//一般可以省略，自动根据参数类型判断
+Test.getM(..)
+```
+
+**类型变量限定**
+
+`<T extends Comparable>`
+
+只能是实现或继承某个接口的T
+
+extends并不是继承的意思
+
+## 8.2 类型擦除
+
+**jvm是没有泛型对象的**
+
+普通泛型类会被擦除成Obeject
+
+```java
+public class Test<T>{
+    T a;
+    public void do(T a){
+        ...
+    }
+}
+//擦除后
+public class Test{
+    Object a;
+    public void do(Object a){
+        ...
+    }
+}
+```
+
+> 不像c++种类型都声称一个，会有模板代码膨胀问题
+
+如果类型变量限定后，会取第一个，然后后面的会以implement方式存储
+
+```java
+public class Test<T extends Comparable & Serializable>{
+    T a;
+    public void do(T a){
+        ...
+    }
+}
+//擦除后
+public class Test implements Serializable{
+    Comparable a;
+    public void do(Comarable a){
+        ...
+    }
+}
+```
+
+**擦除后方法获取的时候类型不会错误吗？**
+
+编译器在字节码中自动插入类型转换的代码，无论是调用方法还是`Test.a`的形式，进行了无感知的强制类型转换
+
+## 8.3 类型擦除与多态的冲突
+
+```java
+class DateInterval extends Pair<LocalDate>
+{
+    //这里想覆盖父类Pari的setSecond
+    //注意不写Override也是可以的，这个注解仅帮助编译器识别
+    public void setSecond(LocalDate second){
+        if(second.compareTo(getFirst())>=0){
+            super.setSecond(second);
+        }
+    }
+}
+//擦除后泰莱了严重的问题
+class DateInterval extends Pair
+{
+    
+    public void setSecond(LocalDate second){
+        ...
+    }
+    
+    //继承了Pair的方法, 没覆盖住
+    public void setSecond(Obeject object){
+        //实际上会有编译器生成的桥方法,多态会选择最适合的那个方法
+        setSecond((LocalDate) obeject);
+    }   
+}
+```
+
+解决了
+
+假如是get呢？java无法分辨？
+
+```java
+Object getSecond();
+LocalDate getSecond();
+```
+
+注意这其实是在jvm中，jvm的函数签名是包括返回值类型的，所以可以分辨
+
+> 详见深入了解JVM
+
+## 8.4 限制与局限性
+
+**不能用基本类型实例化类参数**
+
+- 没有Pair\<int>，只有Pair\<Integer>
+
+**instanceOf getClass只能得到擦除后的原始类型**
+
+**不能创建参数化的数组**
+
+- 数组会记住类型，但擦除后无法有效判断类型，容易出错
+
+  > 是指不能创建 Pair\<Integer>[] 而非 不能使用T[]
+
+- 用ArrayList存储吧
+
+**Varargs警告**
+
+- 可变长参数JVM会当成数组来使用，会产生上面的问题
+- @SafeVarargs
+
+- 虽然加了注解不会警告了，但是可能还有潜在错误，不要用
+
+**不能实例化类型变量**
+
+- new T()写法是不允许的
+
+- 解决方法一：`Pair.makePair(String::new)`这个方法接受一个Supplier\<T>
+
+  ```java
+  public static <T> Pair<T> makePair(Supplier<T> constr){
+      return new Pair<>(constr.get(),constr.get());
+  }
+  ```
+
+- 解决方法二：反射`Pair.makePair(String.class)`
+
+  ```java
+  public static <T> Pair<T> makePair(Class<T> cl){
+      return new Pair<>(cl.getConstructor.newInstance(),cl.getConstructor.newInstance());
+  }
+  ```
+
+  > Class本身是泛型的 String.class是一个Class\<String>的实例（唯一实例），所以能推断得它的类型
+
+**不能构造泛型数组**
+
+- new T[]不允许
+- 同上面的解决方式  函数式接口 IntFucntion\<T[]> 创建
+- 同上面解决方式 反射Array.newInstance
+
+**泛型类的静态上下文中的类型变量无效**
+
+- 因为擦除后是同一个
+
+  ```java
+  //想要通过这个来声明单例
+  //不如我需要全局的Singleton<Random> Singletom<JFileChooser>
+  //擦除后是同一个Singleton类，只有一个，完全起不到上下文环境的作用
+  public class Singleton<T>{
+      private static T i;
+      
+      ....get(){
+          
+      }
+  }
+  ```
+
+**不能抛出或捕获泛型类的实例**
+
+- Problem\<T> extends Exception 不运行这样写
+- catch(T e) 不允许这样写
+
+**可以取消对检查型异常的检查**
+
+> java的原则：对所有检查型异常提供一个处理器。不过可以用泛型取消这个机制
+
+```java
+@SuppressWarning("unchecked")
+static <T extends Throwable>void throws(Throwable t) throws T
+{
+    throw (T) t;
+}
+
+//假设这个在Task,这样就会认为他是非检查型异常
+try{
+    do..
+}catch(Throwable t){
+    Task.<RuntimeException>throwAs(t);
+}
+
+//实际应用 编写线程的时候 run无法抛出检查型异常，这种写可以哄骗编译器使得可以抛出任意异常
+interface Task {
+    void run() throws Exception;
+    
+    static <T extends Throwable>void throws(Throwable t) throws T
+	{
+    	throw (T) t;
+	}
+    
+    static Runable asRunable(Task task){
+        return () -> {
+            try{
+                task.run();
+            }catch(Exception e){
+                Task.<RuntimeException>throwAs(e);
+            }
+        }
+    }
+}
+```
+
+**注意擦除后的冲突**
+
+- 比如Object有equals，泛型的方法不要起equals的方法名
+- 不能同时继承两个不同参数化的同一接口，比如同时继承Comparable\<Employee>和Comparable\<Manager>
+
+## 8.5 泛型的继承规则
+
+无论S和T有什么关系，Pair\<S>和Pair\<T>没有关系
+
+## 8.6 通配符类型
+
+> 为了弥补泛型继承规则的不足产生
+
+**子类型**
+
+- 可以用无参有返回值的函数 因为
+
+```java
+Pair<? extends Employee>
+    
+public static void print(Pair<? extends Employee> pair){
+    //这种情况就可以限定传的Pair<T>，可以传(Pair<? extends Employee>
+}
+
+//pair内部相当于
+//只能无参有返回值的形式
+//返回值一定为Employee的子类型
+? extends Employee getFirst()    
+//不能这样用，因为？不能匹配无法知道类型 调用会报错
+void setFirst(? extends Employee)
+```
+
+这种写法 可以让函数传入多种参数化的类型
+
+**超类型**
+
+```java
+Pair<? super Employee>
+
+public static void print(Pair<? super Employee> pair){
+}
+
+//pair内部相当于
+//只能有参无返回值的形式
+//不能这样用，因为？不能匹配无法知道类型 调用会报错
+? super Employee getFirst()    
+//可以这样用 因为set的 Pair<Object>也是合理的
+void setFirst(? super Employee)
+```
+
+**无限定通配符**
+
+```java
+Pair<?>
+//可以get不可以set
+//比如快速判断null
+public static boolean hasNulls(Pair<?> p){
+    return p.getFirst() == null || p.getNull()==null;
+}
+//当然可以改成泛型形式，但是上面可读性更好
+public static <T> boolean hasNulls(Pair<T> p){
+    return p.getFirst() == null || p.getNull()==null;
+}
+```
+
+> 以上的所有get set 是指 参无返回值 和 无参有返回值的一类方法
+
+**通配符捕获**
+
+```java
+//怎么交换？
+public static void swap(Pair<?> p)
+    
+? = p.getFirst();//写法错误
+
+//需要泛型方法辅助交换
+public static <T> void swapHelper(Pair<T> p){
+    T t = p.getFist();
+    交换...
+}
+
+public static void swap(Pair<?> p){
+	swapHelper(p);
+}
+
+```
+
+## 8.7 反射与泛型
+
+Class\<T>类就是泛型的
+
+主要就是api，用到自己去查吧
+
+反射可以做到的是
+
+- 这个泛型方法有一个名为T的类型参数
+
+- 这个类型参数有一个子类型限定，其自身又是一个泛型类型
+
+- 这个限定类型有一个通配符参数
+
+- 这个通配符参数有一个超类型限定
+
+- 这个泛型方法有一个泛型数组参数
+
+  > 泛型数组指 T[]
+
+## 8.8 类型字面量
+
+> 字面量定义 https://baike.baidu.com/item/%E5%AD%97%E9%9D%A2%E9%87%8F/8500322?fr=aladdin
+
+TypeLiteral Guice框架相关。不太重要不太用得上
+
+https://blog.csdn.net/weefic/article/details/84004701

@@ -14,7 +14,7 @@ tags:
 
 # 0.快速背诵
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/20160914160036049.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/20160914160036049.jpg)
 
 # 1.二分查找
 

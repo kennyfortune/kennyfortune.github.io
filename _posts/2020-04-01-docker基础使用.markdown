@@ -35,7 +35,7 @@ Docker是什么？我们看下官方是怎么定义的。
 
 Docker能够将开发的应用程序**自动部署**到容器。
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-61632705d32d7d330f392e4abe6d15e3_720w.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-61632705d32d7d330f392e4abe6d15e3_720w.jpg)
 
 前面提到，Docker依赖的**Linux内核特性**：
 
@@ -73,7 +73,7 @@ cgroups的功能：
 
 **1.3 虚拟机与容器的区别**
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-702fdb544a3795e3de30818d1515c3f5_720w.jpg)图片来源于Docker官网
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-702fdb544a3795e3de30818d1515c3f5_720w.jpg)图片来源于Docker官网
 
 相比于轻量级的容器，虚拟机会让原本只需要几十兆的应用却要动用几个G的**庞然大物**（操作系统）去支持。虚拟机需要**模拟硬件的行为**，会占用更多的资源。因为容器虚拟化了操作系统而不是硬件，导致**便携性**和**效率**更高。
 
@@ -101,7 +101,7 @@ cgroups的功能：
 
 首先从整体出发，观察docker的架构。
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-385152a71ea94b6d9214bd40c20251ca_720w.jpg)不难发现，docker由内到外是docker daemon（守护进程），docker client（客户端），container（容器），image（镜像），network（网络），data volumes（数据卷）。下面章节也会按照这些点进行各个突破。
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-385152a71ea94b6d9214bd40c20251ca_720w.jpg)不难发现，docker由内到外是docker daemon（守护进程），docker client（客户端），container（容器），image（镜像），network（网络），data volumes（数据卷）。下面章节也会按照这些点进行各个突破。
 
 **Docker的基本组成有：**
 
@@ -113,7 +113,7 @@ cgroups的功能：
 
 **2.1 Docker Client 客户端 & Docker Daemon 守护进程**
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-f310cdc08b8189d425799a5b772b703d_720w.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-f310cdc08b8189d425799a5b772b703d_720w.jpg)
 
 基于C/S架构，简单来说，就是Docker客户端向守护进程发送请求，守护进程处理后会返回结果。Docker的C/S架构在下一篇文章会详细介绍。
 
@@ -121,7 +121,7 @@ cgroups的功能：
 
 镜像是容器的**基石**，容器基于镜像启动和运行。镜像保存的**容器启动的各种条件**。Docker Image是一个**层叠的只读文件系统**。
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-5b6bf4c2cf1196e5949d674a7018e64b_720w.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-5b6bf4c2cf1196e5949d674a7018e64b_720w.jpg)
 
 如上图所示，容器启动时，从下而上**加载需要的镜像**，镜像被依次**移到内存**中，最后，bootfs（引导文件系统）会被**卸载**。
 
@@ -135,7 +135,7 @@ cgroups的功能：
 
 容器通过镜像启动。镜像出现在Docker生命周期中的**构建和打包阶段**，容器存在于**启动和执行**阶段。
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-e1dfe4005b07181a1d5c5a7ae0fa32b8_720w.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/v2-e1dfe4005b07181a1d5c5a7ae0fa32b8_720w.jpg)
 
 镜像的最底层是一个启动文件系统（bootfs）镜像，bootfs 的上层镜像叫做根镜像，一般来说，根镜像是一个操作系统，例如 Ubuntu、CentOS 等，用户的镜像必须构建于根镜像之上，在根镜像之上，用户可以构建出各种各样的其他镜像。
 
@@ -145,7 +145,7 @@ cgroups的功能：
 
 写时复制。如果想要修改一文件，就会先将它复制到可写层。
 
-![1586024437251](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586024437251.jpg)
+![1586024437251](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586024437251.jpg)
 
 > 某层无用的文件会标D（Delete）
 
@@ -435,7 +435,7 @@ host网络，--net=host
 
 bridge网络，--net=bridge  ， docker0 的 linux bridge
 
-![1586025182207](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586025182207.jpg)
+![1586025182207](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586025182207.jpg)
 
 > 可以由docker1 路由到 docker0 路由到 eth0 再连接到外网
 >
@@ -451,7 +451,7 @@ container模式，--net=container:NAME_or_ID
 
 **Bind mount volume（绑定挂载卷）**
 
-![1586024562561](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586024562561.jpg)
+![1586024562561](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1586024562561.jpg)
 
 volumes：Docker管理宿主机文件系统的一部分，默认位于 /var/lib/docker/volumes 目录中
 

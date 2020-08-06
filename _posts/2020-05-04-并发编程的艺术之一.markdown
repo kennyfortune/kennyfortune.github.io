@@ -234,13 +234,13 @@ java中并发包LinkedTransferQueue使用了这种优化方式
 > 如果CAS操作成功，持有偏向锁的线程以后每次进入这个锁相关的同步块时，直接检查ThreadId是否和自身线程Id一致，
 > 如果一致，则认为当前线程已经获取了锁，**虚拟机就可以不再进行任何同步操作**（例如Locking、Unlocking及对Mark Word的Update等）。
 
-![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/20150418202620558.jpg)
+![img](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/20150418202620558.jpg)
 
-![1588670232369](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588670232369.jpg)
+![1588670232369](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588670232369.jpg)
 
 **轻量级锁/自旋锁和重量级锁**
 
-![1588670447799](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588670447799.jpg)
+![1588670447799](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588670447799.jpg)
 
 **锁优缺点对比**
 
@@ -388,5 +388,5 @@ public class Counter{
 
 结果
 
-![1588686878956](https://github.com/kennyfortune/kennyfortune.github.io/raw/masthttps://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588686878956.jpg)
+![1588686878956](https://github.com/kennyfortune/kennyfortune.github.io/raw/master/img/1588686878956.jpg)
 

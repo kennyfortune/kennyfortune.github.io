@@ -19,7 +19,7 @@ public class generator{
 		"code"+File.separator+
 		"kennyfortune.github.io"+File.separator+
 		"_posts",d+"-"+title+".markdown");
-		file.createNewFile();
+		//file.createNewFile();
 		String subtitle = JOptionPane.showInputDialog(" Please input subtitle: \n");
 		String header = "---\n"+
 						"layout:     post\n"+
