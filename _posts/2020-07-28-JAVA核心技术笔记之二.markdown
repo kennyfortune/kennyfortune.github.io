@@ -791,12 +791,13 @@ super::method
   public class InnerClassDemo{
   　　int x;
   　　class A{
+         public int a;
   　　　　static int a = 0;//这样写是不合法的.
   　　　　static final int b=0;//这样写是合法的
       }
   }
-  ```
-
+```
+  
   
 
 内部类是编译器现象，jvm其实对此是没有感知的
