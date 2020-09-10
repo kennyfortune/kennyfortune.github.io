@@ -1,0 +1,85 @@
+---
+layout:     post
+title:      manjaro安装记录
+subtitle:   虚拟机
+date:       2020-09-10
+author:     deponia
+header-img: img/post-sisyphus.jpg
+catalog: true
+tags:
+    - 虚拟机
+    - linux
+---
+
+
+
+# 前言
+
+主要是为了搭建个go编程环境，顺便试试manjaro
+
+把坑点都记录下来
+
+# 1.准备
+
+虚拟机virtual box安装
+
+https://www.virtualbox.org/
+
+manjaro镜像下载
+
+https://manjaro.org/
+
+# 2.虚拟机创建
+
+> 硬盘建议50G 内存大点 其他直接默认
+
+从iso启动，为live模式运行，只存在于内存，重启所有修改消失
+
+记开机弹出来的框下的install，将系统安装进虚拟磁盘
+
+- 语言记得选英文、其他默认
+
+安装完关掉虚拟机
+
+virtual box 控制 -> 系统 -> 启动顺序 把软驱和光驱的勾去掉，只从硬盘启动
+
+ok
+
+# 3.pacman换镜像源
+
+```bash
+#选择中国镜像源
+sudo pacman-mirrors -g
+sudo pacman-mirrors -ic China
+cd /etc/pacman.d
+#打开后改成自己要的镜像源
+nano mirrors-list
+```
+
+# 4.go安装
+
+```bash
+sudo pacman -Sy go
+
+#安装完 我出现了glibc版本过低的问题 需要更新
+#更新glibc
+sudo pacman -S glibc lib32-glibc
+
+#安装完 测试下一下能不能执行
+go env
+go version
+```
+
+# 5.vim安装
+
+```bash
+sudo pacman -Sy vim
+
+#安装完出现了 liperl.so不存在的内容
+#更新perl
+sudo pacman -Sy perl
+
+#更新完再试试
+vim test
+```
+
