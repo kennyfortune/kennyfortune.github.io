@@ -19,7 +19,7 @@ tags:
 
 把坑点都记录下来
 
-# 1.准备
+# 准备
 
 虚拟机virtual box安装
 
@@ -29,7 +29,7 @@ manjaro镜像下载
 
 https://manjaro.org/
 
-# 2.虚拟机创建
+# 虚拟机创建
 
 > 硬盘建议50G 内存大点 其他直接默认
 
@@ -45,7 +45,7 @@ virtual box 控制 -> 系统 -> 启动顺序 把软驱和光驱的勾去掉，�
 
 ok
 
-# 3.pacman换镜像源
+# pacman换镜像源
 
 ```bash
 #选择中国镜像源
@@ -56,7 +56,7 @@ cd /etc/pacman.d
 nano mirrors-list
 ```
 
-# 4.go安装
+# go安装
 
 ```bash
 sudo pacman -Sy go
@@ -68,9 +68,19 @@ sudo pacman -S glibc lib32-glibc
 #安装完 测试下一下能不能执行
 go env
 go version
+
+#配置代理，以访问官方模块仓库
+go env -w GO111MODULE=on
+go env -w GOPROXY=https://goproxy.io,direct
+
+# 设置不走 proxy 的私有仓库，多个用逗号相隔（可选）
+go env -w GOPRIVATE=*.corp.example.com
+
+# 设置不走 proxy 的私有组织（可选）
+go env -w GOPRIVATE=example.com/org_name
 ```
 
-# 5.vim安装
+# vim安装配置
 
 ```bash
 sudo pacman -Sy vim
@@ -81,5 +91,60 @@ sudo pacman -Sy perl
 
 #更新完再试试
 vim test
+
+#配置vim设置，让其适合写代码
+vim /etc/vimrc
+#加入
+set ts=4
+set sts=4
+set sw=4
+set expandtab
+set autoindent
+set nu
+set ruler
+set hlsearch
+
+#自动补全
+inoremap ( ()<ESC>i
+inoremap [ []<ESC>i
+inoremap { {}<ESC>i
+inoremap < <><ESC>i
+```
+
+# git安装
+
+```bash
+sudo pacman -S git
+```
+
+# oh-my-zsh安装
+
+```bash
+wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh
+chmod +x install.sh
+./install.sh
+rm isntall.sh
+#切换成zsh
+sudo chsh -s /bin/zsh
+```
+
+manjora终端设置里也要改下 不然CTRL ALT T打开的还是bash
+
+# docker安装
+
+快速部署杂七杂八的东西
+
+推荐中科大的源
+
+https://lug.ustc.edu.cn/wiki/mirrors/help/docker/
+
+```bash
+pacman -Sy docker
+```
+
+## OPENJDK安装
+
+```bash
+pacman -Sy jdk8-openjdk
 ```
 
