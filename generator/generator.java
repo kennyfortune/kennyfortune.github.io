@@ -15,8 +15,8 @@ public class generator{
 		LocalDate t = LocalDate.now();
 		String d = t.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		
-		File file = new File("E:"+File.separator+
-		"code"+File.separator+
+		File file = new File("D:"+File.separator+
+		"project"+File.separator+
 		"kennyfortune.github.io"+File.separator+
 		"_posts",d+"-"+title+".markdown");
 		//file.createNewFile();

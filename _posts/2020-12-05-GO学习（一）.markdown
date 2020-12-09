@@ -1,0 +1,1371 @@
+---
+layout:     post
+title:      GO学习（一）
+subtitle:   go学习
+date:       2020-12-05
+author:     deponia
+header-img: img/post-sisyphus.jpg
+catalog: true
+tags:
+    - go
+---
+
+# 前言
+
+秋招终于结束了，还忙了必修课课程，很长一段时间没更新。没想到最终要写go了。。。。虽然java前前后后学了不短也不算长，为了工作最终还是要从0开始学个新语言，复更打打基础。
+
+相对的，我学习的文章会与java对比来加深印象。
+
+# 参考
+
+官方tour教程
+
+[golang导入包的几个说明：import - 脚本小娃子 - 博客园 (cnblogs.com)](https://www.cnblogs.com/shengulong/p/10230644.html)
+
+[Golang Package 与 Module 简介 - 简书 (jianshu.com)](https://www.jianshu.com/p/07ffc5827b26)
+
+[理解Golang中defer的使用_huang_yong_peng的博客-CSDN博客](https://blog.csdn.net/huang_yong_peng/article/details/82950743)
+
+[深入理解 Go-Defer的机制 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/60005467)
+
+[Go语言异常处理defer\panic\recover - 迪克猪 - 博客园 (cnblogs.com)](https://www.cnblogs.com/zsy/p/5229641.html)
+
+# GO包管理基础 
+
+> 一开始这个就把我整迷糊了
+>
+> 包管理肯定要用，所以推荐上手直接就开启go mod
+
+## **GOROOT和GOPATH**
+
+GOROOT: go安装后的所在路径
+
+GOPATH: 开发时配置，自己项目开发所在地址，GOPATH内应该有三个文件夹
+
+- bin：编译后的可执行程序目录
+- pkg：编译非Main包的中间链接文件
+- src：go项目源码
+
+在src内可以新建文件夹，每一个文件夹相当于一个项目
+
+> **go 采用go module 进行包管理之后，淡化了这部分内容**
+
+## GO PACKAGE
+
+> go的包与其他语言相比 package非常不同
+
+**Package**
+
+go的文件都需要指定一个package包，package包分为两种
+
+- main包
+  - main 包的可以有唯一的一个 main 函数，也只有 main 包可以编译成可执行的文件。
+  - main包可以有唯一的一个init函数，在作为包被导入的时候会被执行
+  - 同一级目录下只能有一个main包
+- 非main包
+  - 同一级目录下只能有一个非main包，换句话说每一个非main包与一个目录对应
+
+同一级目录下智能有
+
+**重要关系**
+
+当前目录  - go文件指定的package包 - go文件
+
+总结：
+
+1. 一个目录对应一个包，对应一个或多个go文件。
+
+2. 同一个目录下的go文件，只能指派给至多1个非main包。同一目录下有两个非main的package会报错。
+
+3. 同一个目录下的go文件，可以只有main包而没有非main包。
+
+4. main包可以用来编译成可执行文件。
+
+5. 目录名、非main包名、go文件不是一一对应的
+
+   ```go
+   .
+   ├── bin
+   ├── pkg
+   └── src
+   	└── demo
+   		└── main.go
+   		└── testa//目录
+   			└── testb.go//go文件
+   
+   -> cat testb.g
+   package testc //非main包名
+   //....后面省略
+   ```
+
+   可以看见 目录 demo/testa 下 有一个go文件testb.go 指派给了 testc这个非main包
+
+   > 为了阅读清晰，一般我们把 目录和非main包的名字起成相同的（一般IDE都会帮你这么做）
+   >
+   > 也就是在这里testa 一般 和testc 我们要改成相同名字的，比如都改成test
+   >
+   > go文件名则随意了，按自己的功能或开发规范来
+
+**go的导入**
+
+go的导入基于目录，而非包名。
+
+- 由于一个目录只能最多对应一个非main包，所以导入目录，其实就相当于导入一个包
+- 导入的包内有main包的情况下面再说
+
+> 不可以像java一样，导入具体某一个文件
+
+首先对比路径的不同导入方式
+
+第一种：相对路径导入
+
+```go
+import (
+	"./example"
+)
+```
+
+- 这种导入方式 会直接根据当前目录的相对路径进行导入
+  不推荐使用这种方式导入
+
+第二种：非相对路径导入
+
+```go
+import (
+    "fmt"
+	"example"
+)
+```
+
+- 省略了./不指明路径 这种导入方式（没开go mod模式下） 
+  会去$GOROOT/src $GOPATH/src去搜索
+
+- 比如此时的example 它是在 src/demo/example的话 （demo项目的一个子包），就搜不到了
+  它需要作为一个外部项目来导入 也就是说 要放在 src/example
+
+- 那如何导入内部包呢？ demo/example就好了，把前面的目录也写出来
+
+
+
+这种方式同时也是为了方便发布包，比如我把代码发布到了github
+
+```go
+import (
+    "fmt"
+	"github.com/username/example"
+)
+```
+
+go get/run 会自动从github下载包到 $GOPATH/src，作为外部包调用，就符合第二种方式了
+
+缺点也很明显：go get相当于git clone，没法处理版本依赖。于是**go mod**就诞生了， 这点我们等下再谈
+
+**go导入包的多种方式**
+
+- 直接根据$GOPATH/src目录导入import "test/lib"(路径其实是$GOPATH/src/test/lib)
+- 别名导入：import alias_name "test/lib" ，这样使用的时候，可以直接使用别名
+- 使用点号导入：import . "test/lib"，作用是使用的时候直接省略包名
+- 使用下划线导入：improt _ "test/lib"，该操作其实只是引入该包。当导入一个包时，它所有的init()函数就会被执行，但有些时候并非真的需要使用这些包，仅仅是希望它的init()函数被执行而已。这个时候就可以使用_操作引用该包。即使用_操作引用包是无法通过包名来调用包中的导出函数，而是只是为了简单的调用其init函数()。往往这些init函数里面是注册自己包里面的引擎，让外部可以方便的使用，例如实现database/sql的包，在init函数里面都是调用了sql.Register(name string, driver driver.Driver)注册自己，然后外部就可以使用了。
+- **相对路径导入**   import  "./model"  //当前文件同一目录的model目录，但是**不建议这种方式import**
+
+深度优先，一图快速理解
+
+![img](../img/692500-20190106213651283-1572616268.png)
+
+- 程序的初始化和执行都起始于main包。如果main包还导入了其它的包，那么就会在编译时将它们依次导入。
+- 有时一个包会被多个包同时导入，那么它只会被导入一次（例如很多包可能都会用到fmt包，但它只会被导入一次，因为没有必要导入多次）。
+- 当一个包被导入时，如果该包还导入了其它的包，那么会先将其它包导入进来，然后再对这些包中的包级常量和变量进行初始化，接着执行init函数（如果有的话），依次类推。
+- 等所有被导入的包都加载完毕了，就会开始对main包中的包级常量和变量进行初始化，然后执行main包中的init函数（如果存在的话），最后执行main函数。
+
+## GOMOD
+
+Golang 版本：1.12.3。在 1.12 版本之前，使用 Go modules 之前需要环境变量 GO111MODULE:
+
+- GO111MODULE=off: 不使用 modules 功能，查找vendor和GOPATH目录
+- GO111MODULE=on: 使用 modules 功能，不会去 GOPATH 下面查找依赖包。
+- GO111MODULE=auto: Golang 自己检测是不是使用 modules 功能，如果当前目录不在$GOPATH **并且** 当前目录（或者父目录）下有go.mod文件，则使用 GO111MODULE， 否则仍旧使用 GOPATH mode
+
+根目录执行
+
+```go
+go mod init xxxx
+```
+
+根目录出现go.mod文件，里面包含此项目的所有依赖信息
+
+项目不用再放到%GOPATH%/src之下,可以直接运行
+
+每次编译运行会自动检测依赖，更新go.mod
+
+依赖包会自动下载到再%GOPATH%/pkg/mod文件里
+
+> 同时支持了语义化版本，版本升级、本地包、多版本并存等等的功能，这个内容很多，后面再补
+>
+> 总之这一阶段先开启go mod使用就行了
+
+## 重要规则速记
+
+1. **同一个module下方法和声明不能重复**
+2. **包导入基于路径，函数调用基于包名**，为了避免不一致产生理解问题，请务必保证路径最后文件夹名字与包名保持一致
+3. **开头大小写代表是否导出**
+
+# GO包、变量和函数
+
+> 语法层面上的基础
+
+## **包**
+
+普通导入和分组导入（可读性更好）
+
+```go
+import "fmt"
+import "math"
+```
+
+```go
+import (
+	"fmt"
+	"math"
+)
+```
+
+**导出名**
+
+> 类比java就是这个形式决定了 private还是public
+
+决定包外是否可以访问，两个必要条件
+
+- 首字母大写
+- 要么在包块中定义标识符，要么是字段名称或 `method` 方法名称
+
+```java
+package example
+//example.S 调用合法
+type S{
+    Name String //（S的某个实例）.Name 合法
+    age int // //（S的某个实例）.age 不合法
+}
+
+//包外调用不合法
+func exampleFunc(){
+    //...
+}
+
+//包外调用合法
+func ExampleFunc(){
+    //...
+}
+```
+
+## **函数**
+
+```go
+func add(x int, y int) int{
+    return x + y
+}
+```
+
+可以简写
+
+```go
+func add(x, y int) int{
+    return x + y
+}
+```
+
+go可以多值返回
+
+```go
+func swap(x, y string) (string, string) {
+	return y, x
+}
+```
+
+命名返回值（可读性较差，大方法不要用）
+
+```go
+func split(sum int) (x, y int) {
+	x = sum * 4 / 9
+	y = sum - x
+	return
+}
+```
+
+## 变量
+
+**变量声明、赋值、简洁赋值**
+
+```go
+var c, python, java bool
+var c, python, java = true, false, "no!"
+c, python, java := true, false, "no!"
+```
+
+- 函数外的每个语句都必须以关键字开始（`var`, `func` 等等），因此 `:=` 结构不能在函数外使用。
+
+**基本类型**
+
+```go
+bool
+
+string
+
+int  int8  int16  int32  int64
+uint uint8 uint16 uint32 uint64 uintptr
+
+byte // uint8 的别名
+
+rune // int32 的别名
+    // 表示一个 Unicode 码点
+
+float32 float64
+
+complex64 complex128
+
+var (
+	ToBe   bool       = false
+	MaxInt uint64     = 1<<64 - 1
+	z      complex128 = cmplx.Sqrt(-5 + 12i)
+)
+```
+
+- `int`, `uint` 和 `uintptr` 在 32 位系统上通常为 32 位宽，在 64 位系统上则为 64 位宽。 当你需要一个整数值时应使用 `int` 类型，除非你有特殊的理由使用固定大小或无符号的整数类型。
+
+没有明确初始值的变量声明会被赋予它们的 **零值**。
+
+零值是：
+
+- 数值类型为 `0`，
+- 布尔类型为 `false`，
+- 字符串为 `""`（空字符串）。
+
+go是强类型语言
+
+表达式 `T(v)` 将值 `v` 转换为类型 `T`。
+
+```go
+var i int = 42
+var f float64 = float64(i)
+var u uint = uint(f)
+```
+
+默认类型推导
+
+```go
+i := 42           // int
+f := 3.142        // float64
+g := 0.867 + 0.5i // complex128
+```
+
+**常量**
+
+常量的声明与变量类似，只不过是使用 `const` 关键字。
+
+常量可以是字符、字符串、布尔值或数值。
+
+常量不能用 `:=` 语法声明。
+
+`const Pi = 3.14`
+
+数值常量是高精度的 **值**。
+
+一个未指定类型的常量由上下文来决定其类型。
+
+```go
+const (
+	// 将 1 左移 100 位来创建一个非常大的数字
+	// 即这个数的二进制是 1 后面跟着 100 个 0
+	Big = 1 << 100
+	// 再往右移 99 位，即 Small = 1 << 1，或者说 Small = 2
+	Small = Big >> 99
+)
+
+func needInt(x int) int { return x*10 + 1 }
+func needFloat(x float64) float64 {
+	return x * 0.1
+}
+
+func main() {
+	fmt.Println(needInt(Small))
+	fmt.Println(needFloat(Small))
+	fmt.Println(needFloat(Big))
+}
+```
+
+# GO流程控制语句
+
+## **for**
+
+```go
+func main() {
+	sum := 0
+	for i := 0; i < 10; i++ {
+		sum += i
+	}
+	fmt.Println(sum)
+}
+```
+
+相当于别的语言的while
+
+```go
+func main() {
+	sum := 1
+	for sum < 1000 {
+		sum += sum
+	}
+	fmt.Println(sum)
+}
+```
+
+相当于别的语言的while true
+
+```go
+func main() {
+	for {
+	}
+}
+```
+
+## **if**
+
+```go
+func sqrt(x float64) string {
+	if x < 0 {
+		return sqrt(-x) + "i"
+	}
+	return fmt.Sprint(math.Sqrt(x))
+}
+```
+
+`if` 语句可以在条件表达式前执行一个简单的语句。该语句声明的变量作用域仅在 `if` 之内。
+
+在 `if` 的简短语句中声明的变量同样可以在任何对应的 `else` 块中使用。
+
+```go
+func pow(x, n, lim float64) float64 {
+	if v := math.Pow(x, n); v < lim {
+		return v
+	}
+	return lim
+}
+func pow(x, n, lim float64) float64 {
+	if v := math.Pow(x, n); v < lim {
+		return v
+	} else {
+		fmt.Printf("%g >= %g\n", v, lim)
+	}
+	// 这里开始就不能使用 v 了
+	return lim
+}
+```
+
+## **switch**
+
+可以简单赋值
+
+`switch` 是编写一连串 `if - else` 语句的简便方法。它运行第一个值等于条件表达式的 case 语句。
+
+Go 的 switch 语句类似于 C、C++、Java、JavaScript 和 PHP 中的，不过 Go 只运行选定的 case，而非之后所有的 case。 实际上，Go 自动提供了在这些语言中每个 case 后面所需的 `break` 语句。 除非以 `fallthrough` 语句结束，否则分支会自动终止。 Go 的另一点重要的不同在于 switch 的 case 无需为常量，且取值不必为整数。
+
+```go
+func main() {
+	fmt.Print("Go runs on ")
+	switch os := runtime.GOOS; os {
+	case "darwin":
+		fmt.Println("OS X.")
+	case "linux":
+		fmt.Println("Linux.")
+	default:
+		// freebsd, openbsd,
+		// plan9, windows...
+		fmt.Printf("%s.\n", os)
+	}
+}
+```
+
+switch true，来写复杂得if else then
+
+```go
+func main() {
+	t := time.Now()
+	switch {
+	case t.Hour() < 12:
+		fmt.Println("Good morning!")
+	case t.Hour() < 17:
+		fmt.Println("Good afternoon.")
+	default:
+		fmt.Println("Good evening.")
+	}
+}
+```
+
+## **defer**
+
+defer 语句会将函数推迟到外层函数返回之后执行。
+
+推迟调用的函数其参数会立即求值，但直到外层函数返回前该函数都不会被调用。
+
+```go
+func main() {
+	defer fmt.Println("world")
+	fmt.Println("hello")
+}
+```
+
+规则
+
+1. defer 的作用就是把关键字之后的函数执行压入一个栈中延迟执行，多个`defer`的执行顺序是后进先出`LIFO`
+
+2. 被 deferred 函数的参数在 defer 时确定，方法是值传递。所以使用引用，可能导致defer时传的参数改变
+
+   ```go
+   func main() {
+   	a := [3]int{1, 2, 3}
+   	defer fmt.Println(a)
+   	a[0] = 100
+   
+   	b := []int{1, 2, 3}
+   	defer fmt.Println(b)
+   	b[0] = 200
+   }
+   ```
+
+   **注意如果参数是函数，这是后参数的函数仍然是会被立即执行的**
+
+   ```go
+   func trace(s string) string {
+   	fmt.Println("entering:",s)
+   	return s
+   }
+   
+   func un(s string) {
+   	fmt.Println("leaving:",s)
+   }
+   
+   func a() {
+   	defer un(trace("a")) //虽然un函数被推迟了 但是计算参数的时候trace被执行了
+   	fmt.Println("in a")
+   }
+   
+   func b() {
+   	defer un(trace("b"))
+   	fmt.Println("in b")
+   	a()
+   }
+   
+   func main() {
+   	b()
+   }
+   ```
+
+   输出结果
+
+   ```go
+   entering: b
+   in b
+   entering: a
+   in a
+   leaving: a
+   leaving: b
+   ```
+
+3. 被`defer`的函数可以读取和修改带名称的返回值
+
+   ```go
+   func c() (i int) {
+       defer func() { i++ }()
+       return 1
+   }
+   //返回2
+   ```
+
+****作用****
+
+1. 使用defer即时释放资源，打开的文件，新建的连接等等
+
+2. panic recover
+
+   即使函数执行的时候 panic了，函数不往下走了，运行时并不是立刻向上传递panic，而是到defer那，等defer的东西都跑完了，panic再向上传递。所以这时候 defer 有点类似 try-catch-finally 中的 finally。
+   panic就是这么简单。抛出个真正意义上的异常。
+
+   > panic 的作用就像我们平常接触的异常。不过Go可没有try…catch，所以，panic一般会导致程序挂掉（除非recover）。
+
+   ```go
+   func main(){
+       defer func(){ // 必须要先声明defer，否则不能捕获到panic异常
+           fmt.Println("c")
+           if err:=recover();err!=nil{
+               fmt.Println(err) // 这里的err其实就是panic传入的内容，55
+           }
+           fmt.Println("d")
+       }()
+       f()
+   }
+   
+   func f(){
+       fmt.Println("a")
+       panic(55)
+       fmt.Println("b")
+       fmt.Println("f")
+   }
+   ```
+
+   **注意：Go没有全面否定异常的存在，同时极力不鼓励多用异常。**
+
+   因为开发者很容易滥用异常，甚至一个小小的错误都抛出一个异常。在Go语言中，**使用多值返回来返回错误。不要用异常代替错误，更不要用来控制流程。**在极个别的情况下，也就是说，遇到真正的异常的情况下（比如除数为0了）。才使用Go中引入的Exception处理：defer, panic, recover。
+
+# GO类型：struct、slice、映射
+
+## struct
+
+**指针**
+
+Go 拥有指针。指针保存了值的内存地址。
+
+类型 `*T` 是指向 `T` 类型值的指针。其零值为 `nil`。
+
+`&` 操作符会生成一个指向其操作数的指针。
+
+`*` 操作符表示指针指向的底层值。
+
+这也就是通常所说的“间接引用”或“重定向”。
+
+与 C 不同，Go 没有指针运算。
+
+```go
+var p *int
+i := 42
+p = &i
+fmt.Println(*p) // 通过指针 p 读取 i
+*p = 21         // 通过指针 p 设置 i
+```
+
+**结构体**
+
+一个结构体（`struct`）就是一组字段（field）。
+
+```go
+type Vertex struct {
+	X int
+	Y int
+}
+```
+
+结构体字段使用点号来访问。
+
+```go
+func main() {
+	v := Vertex{1, 2}
+	v.X = 4
+	fmt.Println(v.X)
+}
+```
+
+结构体创建
+
+```go
+var (
+	v1 = Vertex{1, 2}  // 创建一个 Vertex 类型的结构体
+	v2 = Vertex{X: 1}  // Y:0 被隐式地赋予
+	v3 = Vertex{}      // X:0 Y:0
+	p  = &Vertex{1, 2} // 创建一个 *Vertex 类型的结构体（指针）
+)
+```
+
+## 数组和slice
+
+**数组**
+
+类型 `[n]T` 表示拥有 `n` 个 `T` 类型的值的数组。
+
+会将变量 `a` 声明为拥有 10 个整数的数组。
+
+数组的长度是其类型的一部分，因此数组不能改变大小。这看起来是个限制，不过没关系，Go 提供了更加便利的方式来使用数组。
+
+```go
+func main() {
+	var a [2]string
+	a[0] = "Hello"
+	a[1] = "World"
+	fmt.Println(a[0], a[1])
+	fmt.Println(a)
+
+	primes := [6]int{2, 3, 5, 7, 11, 13}
+	fmt.Println(primes)
+}
+```
+
+**切片**
+
+每个数组的大小都是固定的。而切片则为数组元素提供动态大小的、灵活的视角。在实践中，切片比数组更常用。
+
+类型 `[]T` 表示一个元素类型为 `T` 的切片。
+
+> 区别就是数组有长度数组 切片没有
+
+切片通过两个下标来界定，即一个上界和一个下界，二者以冒号分隔：
+
+```
+a[low : high]
+```
+
+它会选择一个半开区间，包括第一个元素，但排除最后一个元素。
+
+以下表达式创建了一个切片，它包含 `a` 中下标从 1 到 3 的元素：
+
+```
+a[1:4]
+```
+
+```go
+func main() {
+	primes := [6]int{2, 3, 5, 7, 11, 13}
+
+	var s []int = primes[1:4]
+	fmt.Println(s)
+}
+```
+
+切片就像数组的引用
+
+- 切片并不存储任何数据，它只是描述了底层数组中的一段。
+
+- 更改切片的元素会修改其底层数组中对应的元素。
+
+- 与它共享底层数组的切片都会观测到这些修改。
+
+**切片文法**
+
+```go
+[3]bool{true, true, false}
+```
+
+下面这样则会创建一个和上面相同的数组，然后构建一个引用了它的切片：
+
+```go
+[]bool{true, true, false}
+```
+
+在进行切片时，你可以利用它的默认行为来忽略上下界。
+
+切片下界的默认值为 `0`，上界则是该切片的长度。
+
+对于数组
+
+```go
+var a [10]int
+```
+
+来说，以下切片是等价的：
+
+```go
+a[0:10]
+a[:10]
+a[0:]
+a[:]
+```
+
+**切片的长度与容量**
+
+切片拥有 **长度** 和 **容量**。
+
+切片的长度就是它所包含的元素个数。
+
+切片的容量是从它的第一个元素开始数，到其底层数组元素末尾的个数。
+
+切片 `s` 的长度和容量可通过表达式 `len(s)` 和 `cap(s)` 来获取。
+
+你可以通过重新切片来扩展一个切片，给它提供足够的容量。试着修改示例程序中的切片操作，向外扩展它的容量，看看会发生什么。
+
+```go
+s := []int{2, 3, 5, 7, 11, 13}
+printSlice(s)
+// 截取切片使其长度为 0
+s = s[:0]
+printSlice(s)
+
+// 拓展其长度
+s = s[:4]
+printSlice(s) //len=4 cap=6 [2 3 5 7]
+
+s = s[1:5]
+printSlice(s) //len=4 cap=5 [3 5 7 11]
+	
+s = s[0:3]
+printSlice(s) //len=3 cap=5 [3 5 7]
+
+// 舍弃前两个值
+s = s[2:9] //报错
+printSlice(s) 
+```
+> 我们发现切片再不超过其cap的情况下 可以针对切片从新往后拓展
+>
+> 但是上界、下界是针对当前切片的
+>
+> 看上面s = s[0:3] 我们只能通过增加下界来扩展数组剩余的部分，对于前面被切去的是无法扩展的
+
+**切片零值**
+
+切片的零值是 `nil`。
+
+nil 切片的长度和容量为 0 且没有底层数组。
+
+**动态创建切片**
+
+```go
+a := make([]int, 5)  // len(a)=5
+
+b := make([]int, 0, 5) // len(b)=0, cap(b)=5
+
+b = b[:cap(b)] // len(b)=5, cap(b)=5
+b = b[1:]      // len(b)=4, cap(b)=4
+```
+
+**多维切片**
+
+```go
+board := [][]string{
+	[]string{"_", "_", "_"},
+	[]string{"_", "_", "_"},
+	[]string{"_", "_", "_"},
+}
+```
+**切片增长**
+
+为切片追加新的元素是种常用的操作，为此 Go 提供了内建的 `append` 函数。内建函数的[文档](https://go-zh.org/pkg/builtin/#append)对此函数有详细的介绍。
+
+```
+func append(s []T, vs ...T) []T
+```
+
+`append` 的第一个参数 `s` 是一个元素类型为 `T` 的切片，其余类型为 `T` 的值将会追加到该切片的末尾。
+
+`append` 的结果是一个包含原切片所有元素加上新添加元素的切片。
+
+当 `s` 的底层数组太小，不足以容纳所有给定的值时，它就会分配一个更大的数组。返回的切片会指向这个新分配的数组。
+
+```go
+func main() {
+	var s []int
+	printSlice(s)
+
+	// 添加一个空切片
+	s = append(s, 0)
+	printSlice(s)
+
+	// 这个切片会按需增长
+	s = append(s, 1)
+	printSlice(s)
+
+	// 可以一次性添加多个元素
+	s = append(s, 2, 3, 4)
+	printSlice(s)
+}
+```
+
+**range**
+
+```go
+func main() {
+	for i, v := range pow {
+		fmt.Printf("2**%d = %d\n", i, v)
+	}
+}
+```
+
+注意v是值复制
+
+不想要v直接省略就好
+
+## **映射**
+
+映射的零值为 `nil` 。`nil` 映射既没有键，也不能添加键。
+
+`make` 函数会返回给定类型的映射，并将其**初始化备用。**
+
+> 记得要初始化
+
+```go
+type Vertex struct {
+	Lat, Long float64
+}
+
+var m map[string]Vertex
+
+func main() {
+	m = make(map[string]Vertex)
+	m["Bell Labs"] = Vertex{
+		40.68433, -74.39967,
+	}
+	fmt.Println(m["Bell Labs"])
+}
+```
+
+**映射的文法**
+
+```go
+type Vertex struct {
+	Lat, Long float64
+}
+
+var m = map[string]Vertex{
+	"Bell Labs": Vertex{
+		40.68433, -74.39967,
+	},
+	"Google": Vertex{
+		37.42202, -122.08408,
+	},
+}
+```
+
+若顶级类型只是一个类型名，你可以在文法的元素中省略它。
+
+```go
+var m = map[string]Vertex{
+	"Bell Labs": {40.68433, -74.39967},
+	"Google":    {37.42202, -122.08408},
+}
+```
+
+在映射 `m` 中插入或修改元素：
+
+```
+m[key] = elem
+```
+
+获取元素：
+
+```
+elem = m[key]
+```
+
+删除元素：
+
+```
+delete(m, key)
+```
+
+通过双赋值检测某个键是否存在：
+
+```
+elem, ok = m[key]
+```
+
+若 `key` 在 `m` 中，`ok` 为 `true` ；否则，`ok` 为 `false`。
+
+若 `key` 不在映射中，那么 `elem` 是该映射元素类型的零值。
+
+同样的，当从映射中读取某个不存在的键时，结果是映射的元素类型的零值。
+
+**注** ：若 `elem` 或 `ok` 还未声明，你可以使用短变量声明：
+
+```
+elem, ok := m[key]
+```
+
+**函数值**
+
+函数也是值。它们可以像其它值一样传递。
+
+函数值可以用作函数的参数或返回值。
+
+```go
+func compute(fn func(float64, float64) float64) float64 {
+	return fn(3, 4)
+}
+
+func main() {
+	hypot := func(x, y float64) float64 {
+		return math.Sqrt(x*x + y*y)
+	}
+	fmt.Println(hypot(5, 12))
+
+	fmt.Println(compute(hypot))
+	fmt.Println(compute(math.Pow))
+}
+```
+
+**函数闭包**
+
+Go 函数可以是一个闭包。闭包是一个函数值，它引用了其函数体之外的变量。该函数可以访问并赋予其引用的变量的值，换句话说，该函数被这些变量“绑定”在一起。
+
+例如，函数 `adder` 返回一个闭包。每个闭包都被绑定在其各自的 `sum` 变量上。
+
+```go
+func adder() func(int) int {
+	sum := 0
+	return func(x int) int {
+		sum += x
+		return sum
+	}
+}
+
+func main() {
+	pos, neg := adder(), adder()
+	for i := 0; i < 10; i++ {
+		fmt.Println(
+			pos(i),
+			neg(-2*i),
+		)
+	}
+}
+```
+
+闭包特征
+
+1. 函数内部包含匿名子函数，子函数以return返回 
+2. 子函数可以访问函数内部的局部变量 - 被子函数持有的局部变量不回被销毁
+
+闭包的作用
+
+1. 访问函数的私有变量
+
+   > 类似上文的sum，这是个私有变量
+
+2. 外部函数为全局函数的情况下，保证内部私有变量不被回收
+   **类似类的封装，数据为私有变量，操作为return的匿名函数**
+
+   > 照理说每次函数调用sum就会为0 计算值应该是相同的，但是不是
+   >
+   > 是因为闭包使得，私有变量sum没有被回收，从而不断进行计算
+   >
+   > 理解：函数Adder相当于一个类的封装，每一个Adder有一个自己的sum
+   >
+   > 使用返回的匿名函数，是这个闭包的唯一操作入口，通过这个函数改变私有变量sum
+
+闭包缺点
+
+1. 内存占用，无法回收
+
+# GO方法与接口
+
+## 方法
+
+**绑定type的函数声明**
+
+值接收者的方法无法修改接收者。
+
+指针接收者的方法可以修改接收者指向的值。由于方法经常需要修改它的接收者，指针接收者比值接收者更常用
+
+```go
+type Vertex struct {
+	X, Y float64
+}
+//值接受者
+func Abs(v Vertex) float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+//指针接收者
+func (v *Vertex) Scale(f float64) {
+	v.X = v.X * f
+	v.Y = v.Y * f
+}
+```
+
+> 而以指针为接收者的方法被调用时，接收者既能为值又能为指针：
+>
+> 比如这里 Go 会将语句 `v.Scale(5)` 解释为 `(&v).Scale(5)`。
+>
+> 而以值为接收者的方法被调用时，接收者既能为值又能为指针：
+>
+> 这种情况下，方法调用 `p.Abs()` 会被解释为 `(*p).Abs()`。
+
+你只能为在同一包内定义的类型的接收者声明方法，而不能为其它包内定义的类型（包括 `int` 之类的内建类型）的接收者声明方法。
+
+如果非要为内建类型声明方法，参照下面的形式
+
+```go
+type MyFloat float64
+func (f MyFloat) Abs() float64 {
+	if f < 0 {
+		return float64(-f)
+	}
+	return float64(f)
+}
+
+func main() {
+	f := MyFloat(-math.Sqrt2)
+	fmt.Println(f.Abs())
+}
+```
+
+## **接口**
+
+**接口类型** 是由一组方法签名定义的集合。
+
+接口类型的变量可以保存任何实现了这些方法的值
+
+```go
+type I interface {
+	M()
+}
+
+type T struct {
+	S string
+}
+
+// 此方法表示类型 T 实现了接口 I，但我们无需显式声明此事。
+func (t T) M() {
+	fmt.Println(t.S)
+}
+
+func main() {
+	var i I = T{"hello"}
+	i.M()
+}
+```
+
+类型通过实现一个接口的所有方法来实现该接口。既然无需专门显式声明，也就没有“implements”关键字。
+
+隐式接口从接口的实现中解耦了定义，这样接口的实现可以出现在任何包中，无需提前准备。
+
+因此，也就无需在每一个实现上增加新的接口名称，这样同时也鼓励了明确的接口定义。
+
+**接口值**
+
+接口也是值。它们可以像其它值一样传递。
+
+接口值可以用作函数的参数或返回值。
+
+在内部，接口值可以看做包含值和具体类型的元组：
+
+```
+(value, type)
+```
+
+```go
+type I interface {
+	M()
+}
+
+type T struct {
+	S string
+}
+
+func (t *T) M() {
+	fmt.Println(t.S)
+}
+
+type F float64
+
+func (f F) M() {
+	fmt.Println(f)
+}
+
+func main() {
+	var i I
+
+	i = &T{"Hello"}
+	describe(i)
+	i.M()
+
+	i = F(math.Pi)
+	describe(i)
+	i.M()
+}
+
+func describe(i I) {
+	fmt.Printf("(%v, %T)\n", i, i)
+}
+```
+
+**底层值为 nil 的接口值**
+
+即便接口内的具体值为 nil，方法仍然会被 nil 接收者调用。
+
+在一些语言中，这会触发一个空指针异常，但在 Go 中通常会写一些方法来优雅地处理它（如本例中的 `M` 方法）。
+
+**注意:** 保存了 nil 具体值的接口其自身并不为 nil。
+
+```go
+type I interface {
+	M()
+}
+
+type T struct {
+	S string
+}
+
+func (t *T) M() {
+	if t == nil {
+		fmt.Println("<nil>")
+		return
+	}
+	fmt.Println(t.S)
+}
+
+func main() {
+	var i I
+
+	var t *T
+	i = t
+	describe(i)
+	i.M()
+
+	i = &T{"hello"}
+	describe(i)
+	i.M()
+}
+
+func describe(i I) {
+	fmt.Printf("(%v, %T)\n", i, i)
+}
+```
+
+```go
+//结果
+(<nil>, *main.T)
+<nil>
+(&{hello}, *main.T)
+hello
+```
+
+**空接口**
+
+指定了零个方法的接口值被称为 *空接口：*
+
+```
+interface{}
+```
+
+空接口可保存任何类型的值。（因为每个类型都至少实现了零个方法。）
+
+空接口被用来处理未知类型的值。例如，`fmt.Print` 可接受类型为 `interface{}` 的任意数量的参数。
+
+```go
+func main() {
+	var i interface{}
+	describe(i)
+
+	i = 42
+	describe(i)
+
+	i = "hello"
+	describe(i)
+}
+
+func describe(i interface{}) {
+	fmt.Printf("(%v, %T)\n", i, i)
+}
+```
+
+## 类型断言
+
+**类型断言** 提供了访问接口值底层具体值的方式。
+
+```
+t := i.(T)
+```
+
+该语句断言接口值 `i` 保存了具体类型 `T`，并将其底层类型为 `T` 的值赋予变量 `t`。
+
+若 `i` 并未保存 `T` 类型的值，该语句就会触发一个恐慌。
+
+为了 **判断** 一个接口值是否保存了一个特定的类型，类型断言可返回两个值：其底层值以及一个报告断言是否成功的布尔值。
+
+```
+t, ok := i.(T)
+```
+
+若 `i` 保存了一个 `T`，那么 `t` 将会是其底层值，而 `ok` 为 `true`。
+
+否则，`ok` 将为 `false` 而 `t` 将为 `T` 类型的零值，程序并不会产生恐慌。
+
+请注意这种语法和读取一个映射时的相同之处。
+
+```go
+func main() {
+	var i interface{} = "hello"
+
+	s := i.(string)
+	fmt.Println(s)
+
+	s, ok := i.(string)
+	fmt.Println(s, ok)
+
+	f, ok := i.(float64)
+	fmt.Println(f, ok)
+
+	f = i.(float64) // 报错(panic)
+	fmt.Println(f)
+}
+```
+
+## 类型选择
+
+**类型选择** 是一种按顺序从几个类型断言中选择分支的结构。
+
+类型选择与一般的 switch 语句相似，不过类型选择中的 case 为类型（而非值）， 它们针对给定接口值所存储的值的类型进行比较。
+
+```
+switch v := i.(type) {
+case T:
+    // v 的类型为 T
+case S:
+    // v 的类型为 S
+default:
+    // 没有匹配，v 与 i 的类型相同
+}
+```
+
+类型选择中的声明与类型断言 `i.(T)` 的语法相同，只是具体类型 `T` 被替换成了关键字 `type`。
+
+此选择语句判断接口值 `i` 保存的值类型是 `T` 还是 `S`。在 `T` 或 `S` 的情况下，变量 `v` 会分别按 `T` 或 `S` 类型保存 `i` 拥有的值。在默认（即没有匹配）的情况下，变量 `v` 与 `i` 的接口类型和值相同。
+
+```go
+func do(i interface{}) {
+	switch v := i.(type) {
+	case int:
+		fmt.Printf("Twice %v is %v\n", v, v*2)
+	case string:
+		fmt.Printf("%q is %v bytes long\n", v, len(v))
+	default:
+		fmt.Printf("I don't know about type %T!\n", v)
+	}
+}
+
+func main() {
+	do(21)
+	do("hello")
+	do(true)
+}
+```
+
+## 几个内建接口
+
+常用的
+
+**Stringer** 
+
+```go
+type Stringer interface {
+    String() string
+}
+```
+
+**error**
+
+```go
+type error interface {
+    Error() string
+}
+```
+
+（与 `fmt.Stringer` 类似，`fmt` 包在打印值时也会满足 `error`。）
+
+通常函数会返回一个 `error` 值，调用的它的代码应当判断这个错误是否等于 `nil` 来进行错误处理。
+
+**Reader**
+
+`io` 包指定了 `io.Reader` 接口，它表示从数据流的末尾进行读取。
+
+Go 标准库包含了该接口的[许多实现](https://go-zh.org/search?q=Read#Global)，包括文件、网络连接、压缩和加密等等。
+
+`io.Reader` 接口有一个 `Read` 方法：
+
+```
+func (T) Read(b []byte) (n int, err error)
+```
+
+`Read` 用数据填充给定的字节切片并返回填充的字节数和错误值。在遇到数据流的结尾时，它会返回一个 `io.EOF` 错误。
