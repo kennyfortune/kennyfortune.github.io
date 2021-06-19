@@ -1,0 +1,91 @@
+---
+layout:     post
+title:      K8S基础架构
+subtitle:   kubernetes学习
+date:       2020-12-15
+author:     deponia
+header-img: img/post-sisyphus.jpg
+catalog: true
+tags:
+    - kubernetes
+---
+
+# 参考
+
+https://kubernetes.io/docs/concepts/architecture/
+
+# Nodes
+
+## 概念
+
+物理节点或虚拟节点
+
+由control plane控制
+
+通过kubelet和kube-proxy管理pod
+
+## 管理
+
+创建的两种方式
+
+1. node上的kubelet自注册到control plane（推荐）
+
+   --register-node 为true的时候
+
+   其他选项见文档
+
+2. 人工添加节点
+
+   --register-node=false
+
+   注意：The name of a Node object must be a valid [DNS subdomain name](https://kubernetes.io/docs/concepts/overview/working-with-objects/names#dns-subdomain-names).
+
+```json
+{
+  "kind": "Node",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "10.240.79.157",
+    "labels": {
+      "name": "my-first-k8s-node"
+    }
+  }
+}
+```
+
+k8s会自动持续检测节点健康状况，如果它运行不正常会被集群忽略知道它真正可用
+
+> 作为在DaemonSet一部分的pod是允许在
+
+## 状态
+
+`kubectl describe node <insert-node-name-here>`
+
+**地址**
+
+字段用法因的云提供商或裸机配置而异
+
+HostName
+
+ExternalIP：外部访问
+
+InternalIP：集群内访问
+
+**Condition**
+
+| Node Condition       | Description                                                  |
+| -------------------- | ------------------------------------------------------------ |
+| `Ready`              | `True` if the node is healthy and ready to accept pods, `False` if the node is not healthy and is not accepting pods, and `Unknown` if the node controller has not heard from the node in the last `node-monitor-grace-period` (default is 40 seconds) |
+| `DiskPressure`       | `True` if pressure exists on the disk size--that is, if the disk capacity is low; otherwise `False` |
+| `MemoryPressure`     | `True` if pressure exists on the node memory--that is, if the node memory is low; otherwise `False` |
+| `PIDPressure`        | `True` if pressure exists on the processes—that is, if there are too many processes on the node; otherwise `False` |
+| `NetworkUnavailable` | `True` if the network for the node is not correctly configured, otherwise `False` |
+
+节点出问题的时候，两种情况
+
+- 能连接得上kubelet，k8s会帮你自动删除和自动重新部署pod到其他节点
+- 加入此时完全不可通信，需要人工干预
+
+**Capacity and Allocatable**
+
+描述节点上可用的资源：CPU，内存和可调度到节点上的Pod的最大数量。

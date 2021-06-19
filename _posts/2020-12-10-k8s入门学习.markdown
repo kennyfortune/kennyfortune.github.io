@@ -1,0 +1,327 @@
+---
+layout:     post
+title:      k8s入门学习-基本概述
+subtitle:   k8s官方文档学习
+date:       2020-12-10
+author:     deponia
+header-img: img/post-sisyphus.jpg
+catalog: true
+tags:
+    - kubernetes
+---
+
+# 参考
+
+[Kubernetes Documentation | Kubernetes](https://kubernetes.io/docs/home/)
+
+# Kubernetes基本概述
+
+**官方描述**
+
+Kubernetes是一个可移植的，可扩展的开源平台，用于管理容器化的工作负载和服务，可促进声明式配置和自动化，它具有庞大且快速增长的生态系统，Kubernetes的服务，支持和工具广泛可用。
+
+总的来说它是容器引擎之上的一个概念。解决了普通容器引擎在容器管理上的痛点。
+
+**主要特点**
+
+- 服务发现和负载均衡
+- 存储编排：自动挂载的多种选择。本地存储、云提供商或者其他等等。
+- 自动部署和回滚
+- **Automatic bin packing**：自动根据nodeCPU、内存情况，部署容器
+- **Secret and configuration management**
+
+Kubernetes不是传统的，包罗万象的PaaS（平台即服务）系统，因为Kubernetes在容器级别而不是在硬件级别运行，所以它提供了PaaS产品所共有的一些普遍适用的功能
+
+- 不限制支持的应用程序的类型Kubernetes旨在支持各种各样的工作负载，包括无状态，有状态和数据处理工作负载；如果应用程序可以在容器中运行，则应在Kubernetes上运行良好。
+
+- 持续集成，交付和部署（CI / CD）工作流由组织的文化和偏好以及技术要求决定，不部署源代码，也不构建您的应用程序。
+
+- 不提供应用程序级别的服务，例如中间件（例如，消息总线），数据处理框架（例如，Spark），数据库（例如，MySQL），缓存或集群存储系统（例如，Ceph）这样的组件可以在Kubernetes上运行，并且/或者可以由Kubernetes上运行的应用程序通过可移植机制（例如，开放服务代理）来访问。
+
+- 它提供了一些集成作为概念证明，并提供了收集和导出指标的机制，而没有规定日志记录，监视或警报解决方案。
+
+- 不提供也不要求配置语言/系统（例如，Jsonnet），它提供了声明性API，该声明性API可以由任意形式的声明性规范所针对。
+
+- 不提供也不采用任何全面的机器配置，维护，管理或自我修复系统。
+
+- 另外，Kubernetes不仅仅是一个编排系统，实际上，它消除了编排的需要，编排的技术定义是执行定义的工作流程：首先执行A，然后执行B，然后执行C。**独立的，可组合的控制过程**使得将当前状态驱动到所需状态，也就是从A到C的方式这个过程变得无关紧要，也不需要集中控制，这使得系统更易于使用且功能更强大，健壮，有弹性和可扩展。
+
+  > 这一点和docker-compose对比来看 会比较有感触
+
+# Kubernetes组件
+
+![Components of Kubernetes](../img/components-of-kubernetes.svg)
+
+## **基本术语**
+
+Kubernetes cluster：一系列运行容器的worker machine的集合，一个cluster至少一个node
+
+node：一个运行容器的worker machine。集群的一个机器。
+
+pod：集群中一系列运行容器的集合。托管在node之上的，应用程序工作负载的部分。
+
+control panel：容器的编排层，负责暴露定义、部署、管理容器生命周期的api和接口，。控制平面管理群集中的工作节点和Pod，在生产环境中，控制平面通常跨多台计算机运行，而群集通常运行多个节点，从而提供了容错能力和高可用性。
+
+controller：一个control loop，它通过apiserver监视群集的共享状态，并进行更改以尝试将当前状态移向所需状态。
+
+> 从逻辑上讲，每个控制器是一个单独的进程，但是为了降低复杂性，它们都被编译为单个二进制文件并在单个进程中运行。
+
+- Node controller: 节点监控和故障通知响应
+
+- Replication controller: 负责为系统中的每个复制控制器对象维护正确数量的Pod。
+
+- Endpoints controller: Populates the Endpoints object (that is, joins Services & Pods).
+
+  > endpoint这里指提供服务的实体，k8s会根据service关联到pod的podIP信息组合成一个endpoint。
+
+- Service Account & Token controllers: Create default accounts and API access tokens for new namespaces.
+
+## **Control Plane 组件**
+
+> 控制平面组件可以在集群中的任何计算机上运行，但是，为简单起见，设置脚本通常在同一计算机上启动所有控制平面组件，并且不在该计算机上运行用户容器。
+
+kube-apiserver：Kubernetes API服务器的主要实现是kube-apiserver。Kube-apiserver设计为水平扩展-即，它通过部署更多实例进行扩展。您可以运行kube-apiserver的多个实例并平衡这些实例之间的流量。
+
+etcd：一致且高度可用的键值存储用作所有集群数据的Kubernetes的后备存储。
+
+> 如果您的Kubernetes集群使用etcd作为其后备存储，请确保您有针对这些数据的备份计划。
+
+kube-scheduler：控制平面组件，它监视没有分配节点的新创建的Pod，并选择一个节点以使其运行。
+
+> 自动选择node的计划因素：individual and collective resource requirements, hardware/software/policy constraints, affinity and anti-affinity specifications, data locality, inter-workload interference, and deadlines
+
+kube-controller-manager：运行controller进程的控制平面组件。
+
+cloud-controller-manager：云控制器管理器使您可以将集群链接到云提供商的API，并将与该云平台交互的组件与仅与集群交互的组件分开。
+
+> 有云提供商的服务才能用，额外的controller
+>
+> - Node controller: For checking the cloud provider to determine if a node has been deleted in the cloud after it stops responding
+> - Route controller: For setting up routes in the underlying cloud infrastructure
+> - Service controller: For creating, updating and deleting cloud provider load balancers
+
+## Node 组件
+
+节点组件在每个节点上运行，维护运行中的Pod，并提供Kubernetes运行时环境。
+
+kubelet：在集群中每个节点上运行的代理，以确保容器在Pod中运行。Kubelet接受通过各种机制提供的一组PodSpec，并确保这些PodSpec中描述的容器正在运行且状况良好，但kubelet不会管理非Kubernetes创建的容器。
+
+kube-proxy：kube-proxy是一个网络代理，它在集群中的每个节点上运行，实现了Kubernetes Service概念的一部分。kube-proxy维护节点上的网络规则，这些网络规则允许从群集内部或外部的网络会话与Pod进行网络通信。kube-proxy使用操作系统数据包过滤层（如果它有且可用），否则，kube-proxy会转发流量本身。
+
+Container runtime：负责容器运行的软件。如[Docker](https://docs.docker.com/engine/), [containerd](https://containerd.io/docs/), [CRI-O](https://cri-o.io/#what-is-cri-o), and any implementation of the [Kubernetes CRI (Container Runtime Interface)](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-node/container-runtime-interface.md).
+
+## Addon
+
+插件略过，有DNS、web ui、容器资源监控、Cluster-level Logging等等
+
+# Kubernetes API
+
+可以通过kubectl等工具或者rest请求调用
+
+[Kubernetes API Concepts | Kubernetes](https://kubernetes.io/docs/reference/using-api/api-concepts/)
+
+> 贴个文档地址，写项目再补充下实例
+
+# Kubernetes Object
+
+> 通过k8s api创建、删除。可以用.yaml文件表示一个k8s对象
+
+## **概念**
+
+Kubernetes对象是Kubernetes系统中的持久性实体，Kubernetes使用这些实体来表示集群的状态。
+
+具体来说，它们可以描述：
+
+- 哪些容器化应用程序正在运行（以及在哪些节点上）
+- 这些应用程序可用的资源
+- 有关这些应用程序行为的策略，例如重新启动策略，升级和容错
+
+通过创建对象，您可以有效地告诉Kubernetes系统您想要集群的工作负载做什么看起来；这是集群的理想状态。
+
+## Object Spec and Status
+
+规格和状态
+
+几乎每个Kubernetes对象都包含两个嵌套的对象字段Spec and Status，它们控制着对象的配置：对象规范和对象状态对于具有规范的对象，您必须在创建对象时进行设置，并提供所需特性的描述。拥有的资源：其所需的状态。
+
+不同对象的spec和status可能是不一样的
+
+> For more information on the object spec, status, and metadata, see the [Kubernetes API Conventions](https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md).
+
+```yaml
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 2 # tells deployment to run 2 pods matching the template
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+```
+
+需要的fields
+
+In the `.yaml` file for the Kubernetes object you want to create, you'll need to set values for the following fields:
+
+- `apiVersion` - Which version of the Kubernetes API you're using to create this object
+- `kind` - What kind of object you want to create
+- `metadata` - Data that helps uniquely identify the object, including a `name` string, `UID`, and optional `namespace`
+- `spec` - What state you desire for the object
+
+## Object Names and IDs
+
+同一命名空间，集群中的每个对象的name对于该资源类型（pod、deployment）都是唯一的，每个Kubernetes对象也具有在整个集群中唯一的UID。
+
+> 例如，在同一个命名空间中只能有一个名为myapp-1234的Pod，但是您可以有一个分别名为myapp-1234的Pod和一个Deployment。
+
+**Name**
+
+可用于请求url中`/api/v1/pods/some-name`.
+
+实例
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-demo
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.14.2
+    ports:
+    - containerPort: 80
+```
+
+> 不同类型的name可能约束规则不一样
+
+**UIDs**
+
+对象的唯一标识
+
+## Namespace
+
+为多人协作产生的虚拟集群概念
+
+- 不同namespace下的object可以定义相同的name
+
+- When you create a [Service](https://kubernetes.io/docs/concepts/services-networking/service/), it creates a corresponding [DNS entry](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/). This entry is of the form `<service-name>.<namespace-name>.svc.cluster.local`, which means that if a container just uses `<service-name>`, it will resolve to the service which is local to a namespace. This is useful for using the same configuration across multiple namespaces such as Development, Staging and Production. If you want to reach across namespaces, you need to use the fully qualified domain name (FQDN).
+
+> 通过namespace，我们可以通过service对象跨命名空间调用服务
+
+大多数Kubernetes资源（例如Pod，服务，复制控制器和其他资源）都位于某些名称空间中，但是名称空间资源本身并不位于名称空间中，而低级资源（例如nodes和persistentVolumes）则不在任何名称空间中。
+
+## Labels and Selectors
+
+**labels**
+
+标签是附加在对象上的键/值对，标签旨在用于指定对用户有意义且与用户相关的对象的标识属性，但并不直接暗示核心系统的语义。每个对象可以定义一组键/值标签，每个键对于给定对象必须是唯一的，标签可以在创建时附加到对象上，然后可以随时添加和修改。
+
+```yaml
+"metadata": {
+  "labels": {
+    "key1" : "value1",
+    "key2" : "value2"
+  }
+}
+```
+
+> 用于开发者自己标识
+
+**selectors**
+
+标签与名称和UID不同，标签不提供唯一性，通常，我们希望许多对象带有相同的标签。
+
+通过标签选择器，客户端/用户可以识别一组对象，标签选择器是Kubernetes中的核心分组原语。
+
+该API目前支持两种选择器：基于等式和基于集合；标签选择器可以由多个需求组成，这些需求以逗号分隔；如果有多个需求，则必须满足所有条件，以便逗号分隔符充当逻辑AND（&&）运算符。
+
+- 基于等式
+
+  ```
+  environment = production
+  tier != frontend
+  ```
+
+- 基于集合
+
+  ```go
+  environment in (production, qa)
+  tier notin (frontend, backend)
+  partition
+  !partition
+  ```
+
+yaml版写法
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cuda-test
+spec:
+  containers:
+    - name: cuda-test
+      image: "k8s.gcr.io/cuda-vector-add:v0.1"
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+  nodeSelector:
+    accelerator: nvidia-tesla-p100 #基于等式
+```
+
+```yaml
+selector:
+  matchLabels: # 相当于 matchExpressions 的in表达
+    component: redis 
+  matchExpressions: #基于集合 Newer resources, such as Job, Deployment, ReplicaSet, and DaemonSet, support set-based requirements as well.
+    - {key: tier, operator: In, values: [cache]}
+    - {key: environment, operator: NotIn, values: [dev]}
+```
+
+## Annotations
+
+注释，直接看用法吧
+
+```yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: annotations-demo
+  annotations:
+    imageregistry: "https://hub.docker.com/"
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.14.2
+    ports:
+    - containerPort: 80
+```
+
+## Field Selectors
+
+*Field selectors* let you [select Kubernetes resources](https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects) based on the value of one or more resource fields. Here are some examples of field selector queries:
+
+- `metadata.name=my-service`
+- `metadata.namespace!=default`
+- `status.phase=Pending`
+
+This `kubectl` command selects all Pods for which the value of the [`status.phase`](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase) field is `Running`:
+
+```shell
+kubectl get pods --field-selector status.phase=Running
+```
+
+> 查询时候用的，了解下就行
